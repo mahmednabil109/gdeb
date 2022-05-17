@@ -1,0 +1,27 @@
+
+ADD    OPCODE = 0x01
+SUB    OPCODE = 0x02
+MUL    OPCODE = 0x03
+DIV    OPCODE = 0x04
+GT     OPCODE = 0x05 // greater than
+LT     OPCODE = 0x06 // less than
+SGT    OPCODE = 0x07 // signed greater than
+SLT    OPCODE = 0x08 // signed Less Than
+EQ     OPCODE = 0x09
+AND    OPCODE = 0x0b
+OR     OPCODE = 0x0c
+NOT    OPCODE = 0x0d
+XOR    OPCODE = 0x0e
+// All of the above opcodes consumes the top two elements in the stack, compute the result and push back the result to the stack
+// thus, before any of the above operations, two values must be pushed to the stack
+// Note: No parameters needed, i.e. the opcode for the operation only
+
+ISZERO OPCODE = 0x0a // consumes one value from the stack, and push back 0 or 1
+
+PUSH   OPCODE = 0x0f // the opcode is followed by 32 bytes to be pushed in the stack.
+// Note: the very first byte is the MSB
+
+
+POP    OPCODE = 0x10 // pops the value and neglect it
+MLOAD  OPCODE = 0x11 // consumes the index from the stack and stores it to the memory,
+MSTORE OPCODE = 0x12 // consumes the index and the value from the stack. Note: The top of the stack is the value then the index
