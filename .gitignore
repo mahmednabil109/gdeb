@@ -3,3 +3,9 @@ bin
 **/.ipynb_checkpoints
 **__debug_bin
 **/*.log
+
+.idea
+VM/TryGO.go
+VM/VM.iml
+VM/Programs
+
