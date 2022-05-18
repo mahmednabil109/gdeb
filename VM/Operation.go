@@ -3,15 +3,16 @@ package VM
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mahmednabil109/gdeb/OracleConnection"
 	"io/ioutil"
 	"net/http"
 )
 
 type (
-	OperationType func(*VMState, *ContractByteCode) error
+	OperationType func(*State, *GlobalData) error
 )
 
-func AddOP(state *VMState, code *ContractByteCode) error {
+func AddOP(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -22,7 +23,7 @@ func AddOP(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-func SubOP(state *VMState, code *ContractByteCode) error {
+func SubOP(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -33,7 +34,7 @@ func SubOP(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-func MulOP(state *VMState, code *ContractByteCode) error {
+func MulOP(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -45,29 +46,29 @@ func MulOP(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-// GreaterOp Return 1 if a > b
-//func GreaterOp(state *VMState, code *ContractByteCode) error {
-//	stack := state.Frame.Stack
-//
-//	b := stack.Pop()
-//	a := stack.Pop()
-//
-//	isGreater := a.GT(b)
-//
-//	var result DataWord
-//
-//	if isGreater {
-//		result.SetUint32(1, 0)
-//	} else {
-//		result.SetUint32(0, 0)
-//	}
-//
-//	stack.Push(&result)
-//
-//	return nil
-//}
+//GreaterOp Return 1 if a > b
+func GreaterOp(state *State, globalData *GlobalData) error {
+	stack := state.Frame.Stack
 
-func XorOP(state *VMState, code *ContractByteCode) error {
+	b := stack.Pop()
+	a := stack.Pop()
+
+	isGreater := a.GT(b)
+
+	var result DataWord
+
+	if isGreater {
+		result.SetUint32(1, 0)
+	} else {
+		result.SetUint32(0, 0)
+	}
+
+	stack.Push(result)
+
+	return nil
+}
+
+func XorOP(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -77,7 +78,7 @@ func XorOP(state *VMState, code *ContractByteCode) error {
 
 	return nil
 }
-func AndOP(state *VMState, code *ContractByteCode) error {
+func AndOP(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -87,7 +88,7 @@ func AndOP(state *VMState, code *ContractByteCode) error {
 
 	return nil
 }
-func OrOP(state *VMState, code *ContractByteCode) error {
+func OrOP(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -97,7 +98,7 @@ func OrOP(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-func NotOP(state *VMState, code *ContractByteCode) error {
+func NotOP(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 
 	a := stack.Pop()
@@ -106,22 +107,22 @@ func NotOP(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-func PushOp(state *VMState, code *ContractByteCode) error {
+func PushOp(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 	newData := NewDataWord()
-	newData.SetDataWord((*code)[state.Frame.pc+1 : state.Frame.pc+33])
+	newData.SetDataWord(globalData.ContractCode[state.Frame.pc+1 : state.Frame.pc+33])
 	stack.Push(newData)
 	return nil
 
 }
 
-func PopOp(state *VMState, code *ContractByteCode) error {
+func PopOp(state *State, globalData *GlobalData) error {
 	state.Frame.Stack.Pop()
 	return nil
 
 }
 
-func MStoreOp(state *VMState, code *ContractByteCode) error {
+func MStoreOp(state *State, globalData *GlobalData) error {
 	mem := state.Memory
 
 	offset, value := state.Frame.Stack.Pop().toInt32(), state.Frame.Stack.Pop().toByteArray()
@@ -130,7 +131,7 @@ func MStoreOp(state *VMState, code *ContractByteCode) error {
 
 }
 
-func MLoadOp(state *VMState, code *ContractByteCode) error {
+func MLoadOp(state *State, globalData *GlobalData) error {
 	mem := state.Memory
 	offset := state.Frame.Stack.Pop().toInt32()
 	size := state.Frame.Stack.Pop().toInt32()
@@ -146,7 +147,7 @@ func MLoadOp(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-func OracleOp(state *VMState, code *ContractByteCode) error {
+func OracleOp(state *State, globalData *GlobalData) error {
 	keyOffset := state.Frame.Stack.Pop().toInt32()
 	keySize := state.Frame.Stack.Pop().toInt32()
 
@@ -198,14 +199,14 @@ func OracleOp(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-func JumpOp(state *VMState, code *ContractByteCode) error {
+func JumpOp(state *State, globalData *GlobalData) error {
 	pc := &state.Frame.pc
 	*pc = uint(state.Frame.Stack.Pop().toInt32())
 	return nil
 }
 
 // JumpIOp conditional Jump
-func JumpIOp(state *VMState, code *ContractByteCode) error {
+func JumpIOp(state *State, globalData *GlobalData) error {
 	pc := &state.Frame.pc
 	check := state.Frame.Stack.Pop().toInt32()
 	nextInstruction := state.Frame.Stack.Pop().toInt32()
@@ -218,19 +219,27 @@ func JumpIOp(state *VMState, code *ContractByteCode) error {
 	return nil
 }
 
-//
-//func loadLocalVariable(state *VMState, code *ContractByteCode) error {
-//
-//	localVarArr := state.Frame.localVariables
-//	varIndex := state.Frame.Stack.Pop().toInt32()
-//
-//	receivingChannel := localVarArr[varIndex]
-//
-//	select {
-//	case receivedMsg := <-receivingChannel:
-//		state.Frame.Stack.Push(receivedMsg)
-//	case <-time.After(time.Second * 3):
-//		return errors.New("oracle timeout")
-//	}
-//	return nil
-//}
+func SubscribeOp(state *State, globalData *GlobalData) error {
+	stack := state.Frame.Stack
+	key := stack.Pop()
+	size := stack.Pop()
+	offset := stack.Pop()
+
+	url, err := state.Memory.loadString(int(offset.toInt32()), int(size.toInt32()))
+	if err != nil {
+		return err
+	}
+
+	sub := &OracleConnection.SubscribeMessage{
+		OracleKey: key.toString(),
+		Url:       url,
+	}
+
+	globalData.OraclePool.SubscribeChannel <- sub
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

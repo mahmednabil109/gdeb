@@ -3,19 +3,23 @@ package VM
 import (
 	"errors"
 	"fmt"
+	"github.com/mahmednabil109/gdeb/OracleConnection"
 )
 
-type ContractByteCode []byte
+type GlobalData struct {
+	ContractCode []byte
+	OraclePool   OracleConnection.OraclePool
+}
 
 type Interpreter struct {
-	state            *VMState
-	code             *ContractByteCode
+	state            *State
+	globalData       *GlobalData
 	operationMapping *OperationMapping
 	gasLimit         uint64
 }
 
-func newInterpreter(code *ContractByteCode, gasLimit uint64) *Interpreter {
-	return &Interpreter{state: newVM(), code: code, operationMapping: newInstructionInfo(), gasLimit: gasLimit}
+func newInterpreter(code *GlobalData, gasLimit uint64) *Interpreter {
+	return &Interpreter{state: newVM(), globalData: code, operationMapping: newInstructionInfo(), gasLimit: gasLimit}
 }
 
 func (interpreter *Interpreter) execute() error {
@@ -29,7 +33,7 @@ func (interpreter *Interpreter) execute() error {
 			return errors.New("out of gas error")
 		}
 
-		curInstruction := (*interpreter.code)[*pc]
+		curInstruction := (interpreter.globalData.ContractCode)[*pc]
 		operationInfo := interpreter.operationMapping.getInstruction(curInstruction)
 
 		if interpreter.state.Frame.Stack.Size() < operationInfo.stackArgsCount {
@@ -37,7 +41,7 @@ func (interpreter *Interpreter) execute() error {
 			return errors.New("stack underflow error")
 		}
 
-		err := operationInfo.execute(interpreter.state, interpreter.code)
+		err := operationInfo.execute(interpreter.state, interpreter.globalData)
 		if err != nil {
 			return err
 		}
@@ -47,8 +51,8 @@ func (interpreter *Interpreter) execute() error {
 		*pc += operationInfo.pcJump
 
 		fmt.Println(interpreter.state.toString())
-		if int(*pc) >= len(*interpreter.code) {
-			return errors.New("cannot reach the code")
+		if int(*pc) >= len(interpreter.globalData.ContractCode) {
+			return errors.New("cannot reach the globalData")
 		}
 	}
 }

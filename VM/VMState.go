@@ -1,6 +1,9 @@
 package VM
 
-import "strconv"
+import (
+	"github.com/mahmednabil109/gdeb/OracleConnection"
+	"strconv"
+)
 
 type dataType uint8
 
@@ -27,22 +30,23 @@ func newFrame() *Frame {
 	}
 }
 
-type VMState struct {
+type State struct {
 	Memory      Memory
 	Frame       *Frame
 	consumedGas uint64
+	OracleConnection.OraclePool
 }
 
-func newVM() *VMState {
+func newVM() *State {
 
-	return &VMState{
+	return &State{
 		Memory:      newMemory(),
 		Frame:       newFrame(),
 		consumedGas: 0,
 	}
 }
 
-func (vm *VMState) toString() string {
+func (vm *State) toString() string {
 	return vm.Frame.Stack.toString() +
 		"\n" + "PC ---->" + strconv.Itoa(int(vm.Frame.pc)) +
 		"\n" + "Consumed Gas ----->" + strconv.Itoa(int(vm.consumedGas))

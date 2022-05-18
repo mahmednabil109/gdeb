@@ -13,23 +13,30 @@ func newMemory() Memory {
 	return make(Memory, max)
 }
 
-func (memory *Memory) store(offset int, elements []uint8) bool {
+func (memory Memory) store(offset int, elements []uint8) bool {
 	size := len(elements)
 	if size > 0 && size+offset < max {
-		copy((*memory)[offset:offset+size], elements)
+		copy(memory[offset:offset+size], elements)
 	}
 	return false
 }
 
-func (memory *Memory) load(offset, size int) ([]byte, error) {
+func (memory Memory) load(offset, size int) ([]byte, error) {
+	if size+offset >= max {
+		return nil, errors.New("memory out of bound")
+	}
 
-	if offset+size < max && size <= 256 {
-		return (*memory)[offset : offset+size], nil
+	return memory[offset : offset+size], nil
+
+}
+
+func (memory Memory) loadString(offset, size int) (string, error) {
+
+	if size+offset >= max {
+		return "", errors.New("memory out of bound")
 	}
-	if size > 256 {
-		return nil, errors.New("cannot load data of size greater than 256")
-	}
-	return nil, errors.New("cannot get data")
+
+	return string(memory[offset : offset+size]), nil
 }
 
 func (memory *Memory) toString() string {

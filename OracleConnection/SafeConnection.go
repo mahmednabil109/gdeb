@@ -1,36 +1,49 @@
 package OracleConnection
 
 import (
-	json2 "encoding/json"
 	"github.com/gorilla/websocket"
-	"log"
 	"sync"
 )
 
 type SafeConnection struct {
+	url             string
 	conn            *websocket.Conn
 	connectionCount int
 	lock            sync.Mutex
 }
 
-func (conn *SafeConnection) writeJson(message Message) error {
-	json, err := json2.Marshal(message)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+func (conn *SafeConnection) writeMsg(message string) error {
+
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
-	err = conn.conn.WriteJSON(json)
+	err := conn.conn.WriteMessage(websocket.TextMessage, []byte(message))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (conn *SafeConnection) readMessage() {
+func (conn *SafeConnection) readMessage() (*Response, error) {
+	var response *Response
 	conn.lock.Lock()
-	//_, message, err := conn.conn.ReadJSON()
-	//if
+	defer conn.lock.Unlock()
+	err := conn.conn.ReadJSON(response)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
 
+func (conn *SafeConnection) incCount() {
+	conn.lock.Lock()
+	defer conn.lock.Unlock()
+	conn.connectionCount++
+}
+
+func (conn *SafeConnection) decCount() {
+	conn.lock.Lock()
+	defer conn.lock.Unlock()
+	if conn.connectionCount > 0 {
+		conn.connectionCount--
+	}
 }

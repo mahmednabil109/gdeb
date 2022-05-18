@@ -55,6 +55,9 @@ func (x DataWord) toByteArray() []uint8 {
 	return result
 }
 
+func (x DataWord) toString() string {
+	return string(x.toByteArray())
+}
 func (x DataWord) ToBinary() string {
 	result := ""
 	for word := 0; word < len(x); word++ {
@@ -70,10 +73,6 @@ func (x DataWord) ToBinary() string {
 	return result
 }
 
-//func (x DataWord) msgToDataWord(msg Message) {
-//
-//}
-
 func (x DataWord) toStringHex() string {
 	newX := x.ToBinary()
 	xInHex, _ := strconv.ParseInt(newX, 2, 64)
@@ -82,6 +81,15 @@ func (x DataWord) toStringHex() string {
 
 func (x DataWord) toInt32() uint32 {
 	return x[0]
+}
+
+func (x DataWord) toDecimal() string {
+	binary := x.ToBinary()
+	result := ""
+	for i := 0; i < len(binary); i++ {
+
+	}
+	return result
 }
 
 func (x DataWord) SetUint32(a uint32, i uint) {

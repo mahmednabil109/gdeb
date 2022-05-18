@@ -7,22 +7,37 @@ import (
 	"sync"
 )
 
-type Message struct {
-	OracleKey string `json:"oracle_key"`
-	Condition string `json:"condition"`
-	Value     string `json:"value"`
-	IsSubOnce bool   `json:"isSubOnce"`
+type SubscribeMessage struct {
+	Url       string
+	OracleKey string
+	ResChan   chan Response
 }
 
 type OraclePool struct {
-	connections     map[string]*SafeConnection
-	connectionCount int
-	lock            sync.Mutex
+	connections      map[string]*SafeConnection
+	lock             sync.Mutex
+	SubscribeChannel chan *SubscribeMessage
+	subscribers      []*SubscribeMessage
 }
 
 type Response struct {
-	value     string
-	timestamp string
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Timestamp string `json:"timestamp"`
+	Error     error
+}
+
+func NewOraclePool() *OraclePool {
+
+	pool := &OraclePool{
+		connections:      map[string]*SafeConnection{},
+		lock:             sync.Mutex{},
+		SubscribeChannel: make(chan *SubscribeMessage, 5),
+		subscribers:      make([]*SubscribeMessage, 1),
+	}
+	go pool.listen()
+
+	return pool
 }
 
 func (pool *OraclePool) getConnection(url string) (*SafeConnection, error) {
@@ -39,29 +54,76 @@ func (pool *OraclePool) getConnection(url string) (*SafeConnection, error) {
 	}
 	pool.lock.Lock()
 	pool.connections[url] = &SafeConnection{
+		url:             url,
 		conn:            connection,
 		connectionCount: 1,
 		lock:            sync.Mutex{},
 	}
 	pool.lock.Unlock()
 
+	go pool.messageReceiver(pool.connections[url])
+
 	return pool.connections[url], nil
 }
 
-func (pool *OraclePool) Subscribe(url string, message Message, res chan Response) error {
-
-	safeConnection, err := pool.getConnection(url)
-	if err != nil {
-		return err
+func (pool *OraclePool) messageReceiver(safeConn *SafeConnection) {
+	conn := safeConn.conn
+	for {
+		var res struct {
+			Key       string `json:"key"`
+			Value     string `json:"value"`
+			Timestamp string `json:"timestamp"`
+		}
+		err := conn.ReadJSON(&res)
+		if err != nil {
+			log.Println("Close: " + err.Error())
+		}
 	}
-	err = safeConnection.writeJson(message)
-	if err != nil {
-		log.Println(err)
-		return err
+}
+
+func (pool *OraclePool) listen() {
+
+	for {
+
+		select {
+		case sub := <-pool.SubscribeChannel:
+			pool.lock.Lock()
+			pool.subscribers = append(pool.subscribers, sub)
+			pool.lock.Unlock()
+			safeConn, err := pool.getConnection(sub.Url)
+			if err != nil {
+				sub.ResChan <- Response{Error: errors.New("no such oracle")}
+			}
+			err = safeConn.writeMsg(sub.OracleKey)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 	}
 
-	go func() {
+	/*
 
-	}()
-	return err
+
+
+		go func() {
+			for {
+				res, err := safeConn.readMessage()
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				resChannel <- *res
+				if message.IsSubOnce {
+					safeConn.decCount()
+					if safeConn.connectionCount == 0 {
+						err := safeConn.conn.Close()
+						log.Println(err)
+					}
+					return
+				}
+			}
+		}()
+
+		return err*/
 }
