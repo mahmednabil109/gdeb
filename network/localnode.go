@@ -17,7 +17,7 @@ const (
 	MAX_REQ_TIME = 20 * time.Second
 )
 
-type Localnode struct {
+type Node struct {
 	pd.UnimplementedKoordeServer
 	Peer
 	D            *Peer
@@ -30,7 +30,7 @@ type Localnode struct {
 
 /* RPC impelementation */
 
-func (ln *Localnode) BootStarpRPC(bctx context.Context, bootstrapPacket *pd.BootStrapPacket) (*pd.BootStrapReply, error) {
+func (ln *Node) BootStarpRPC(bctx context.Context, bootstrapPacket *pd.BootStrapPacket) (*pd.BootStrapReply, error) {
 	src_id := ID(utils.ParseID(bootstrapPacket.SrcId))
 
 	successor, err := ln.Lookup(src_id)
@@ -60,7 +60,7 @@ func (ln *Localnode) BootStarpRPC(bctx context.Context, bootstrapPacket *pd.Boot
 	}, nil
 }
 
-func (ln *Localnode) LookupRPC(bctx context.Context, lookupPacket *pd.LookupPacket) (*pd.PeerPacket, error) {
+func (ln *Node) LookupRPC(bctx context.Context, lookupPacket *pd.LookupPacket) (*pd.PeerPacket, error) {
 
 	k := ID(utils.ParseID(lookupPacket.K))
 	kShift := ID(utils.ParseID(lookupPacket.KShift))
@@ -120,14 +120,14 @@ func (ln *Localnode) LookupRPC(bctx context.Context, lookupPacket *pd.LookupPack
 	return reply, nil
 }
 
-func (ln *Localnode) UpdatePredecessorRPC(bctx context.Context, p *pd.PeerPacket) (*pd.PeerPacket, error) {
+func (ln *Node) UpdatePredecessorRPC(bctx context.Context, p *pd.PeerPacket) (*pd.PeerPacket, error) {
 	old_predecessor := form_peer_packet(ln.Predecessor)
 	ln.Predecessor = parse_peer_packet(p)
 
 	return old_predecessor, nil
 }
 
-func (ln *Localnode) UpdateSuccessorRPC(bctx context.Context, p *pd.PeerListPacket) (*pd.PeerListPacket, error) {
+func (ln *Node) UpdateSuccessorRPC(bctx context.Context, p *pd.PeerListPacket) (*pd.PeerListPacket, error) {
 	ln.Successor = parse_peer_packet(p.Peers[0])
 	Succ_id := ID(utils.ParseID(p.Peers[1].SrcId))
 
@@ -143,13 +143,13 @@ func (ln *Localnode) UpdateSuccessorRPC(bctx context.Context, p *pd.PeerListPack
 	return &pd.PeerListPacket{Peers: pointers}, nil
 }
 
-func (ln *Localnode) UpdateDPointerRPC(bctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
+func (ln *Node) UpdateDPointerRPC(bctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
 	ln.D = parse_peer_packet(p)
 
 	return &pd.Empty{}, nil
 }
 
-func (ln *Localnode) AddDParentRPC(bctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
+func (ln *Node) AddDParentRPC(bctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
 	peer := parse_peer_packet(p)
 	ln.DParents = append(ln.DParents, peer)
 
@@ -161,7 +161,7 @@ func (ln *Localnode) AddDParentRPC(bctx context.Context, p *pd.PeerPacket) (*pd.
 	return &pd.Empty{}, nil
 }
 
-func (ln *Localnode) RemoveDParentRPC(btcx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
+func (ln *Node) RemoveDParentRPC(btcx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
 	peer := parse_peer_packet(p)
 	peer_idx := -1
 
@@ -179,7 +179,7 @@ func (ln *Localnode) RemoveDParentRPC(btcx context.Context, p *pd.PeerPacket) (*
 	return &pd.Empty{}, nil
 }
 
-func (ln *Localnode) NotifyRPC(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
+func (ln *Node) NotifyRPC(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
 	predecessor_peer := parse_peer_packet(p)
 
 	if ln.Predecessor == nil || predecessor_peer.NodeAddr.InLRXRange(ln.Predecessor.NodeAddr, ln.NodeAddr) {
@@ -192,8 +192,8 @@ func (ln *Localnode) NotifyRPC(ctx context.Context, p *pd.PeerPacket) (*pd.Empty
 	return &pd.Empty{}, nil
 }
 
-func (ln *Localnode) BroadCastRPC(ctx context.Context, b *pd.BlockPacket) (*pd.Empty, error) {
-	log.Printf("Braodcast %s", b.Info)
+func (ln *Node) BroadCastRPC(ctx context.Context, b *pd.BroadCastPacket) (*pd.Empty, error) {
+	// log.Printf("Braodcast %s", b.Info)
 	// TODO notify the consensus code
 	// ln.ConsensusAPI.AddBlock(mock.Block{Info: b.Info})
 
@@ -208,7 +208,7 @@ func (ln *Localnode) BroadCastRPC(ctx context.Context, b *pd.BlockPacket) (*pd.E
 			return nil, err
 		}
 
-		log.Printf("Broadcast %s --> %s limit %s", b.Info, ln.Successor.NetAddr.String(), b.Limit)
+		// log.Printf("Broadcast %s --> %s limit %s", b.Info, ln.Successor.NetAddr.String(), b.Limit)
 		_, err = ln.Successor.kc.BroadCastRPC(ctx, b)
 		return &pd.Empty{}, err
 
@@ -226,11 +226,11 @@ func (ln *Localnode) BroadCastRPC(ctx context.Context, b *pd.BlockPacket) (*pd.E
 			return nil, err
 		}
 
-		log.Printf("Broadcast %s --> %s limit %s", b.Info, ln.Successor.NetAddr.String(), NewLimit)
+		// log.Printf("Broadcast %s --> %s limit %s", b.Info, ln.Successor.NetAddr.String(), NewLimit)
 
 		ctx, cancel := context.WithTimeout(context.Background(), MAX_REQ_TIME)
 		defer cancel()
-		_, err = ln.Successor.kc.BroadCastRPC(ctx, &pd.BlockPacket{Limit: NewLimit, Info: b.Info})
+		_, err = ln.Successor.kc.BroadCastRPC(ctx, &pd.BroadCastPacket{Limit: NewLimit})
 		if err != nil {
 			return nil, err
 		}
@@ -241,11 +241,11 @@ func (ln *Localnode) BroadCastRPC(ctx context.Context, b *pd.BlockPacket) (*pd.E
 				return nil, err
 			}
 
-			log.Printf("Broadcast %s --> %s limit %s", b.Info, ln.D.NetAddr.String(), b.Limit)
+			// log.Printf("Broadcast %s --> %s limit %s", b.Info, ln.D.NetAddr.String(), b.Limit)
 
 			ctx, cancel := context.WithTimeout(context.Background(), MAX_REQ_TIME)
 			defer cancel()
-			_, err = ln.D.kc.BroadCastRPC(ctx, &pd.BlockPacket{Limit: b.Limit, Info: b.Info})
+			_, err = ln.D.kc.BroadCastRPC(ctx, &pd.BroadCastPacket{Limit: b.Limit})
 			if err != nil {
 				return nil, err
 			}
@@ -254,60 +254,60 @@ func (ln *Localnode) BroadCastRPC(ctx context.Context, b *pd.BlockPacket) (*pd.E
 	return &pd.Empty{}, nil
 }
 
-func (ln *Localnode) GetSuccessorRPC(ctx context.Context, e *pd.Empty) (*pd.PeerPacket, error) {
+func (ln *Node) GetSuccessorRPC(ctx context.Context, e *pd.Empty) (*pd.PeerPacket, error) {
 	// TODO make sure that the pointer is valid
 	return form_peer_packet(ln.Successor), nil
 }
 
-func (ln *Localnode) GetPredecessorRPC(ctx context.Context, e *pd.Empty) (*pd.PeerPacket, error) {
+func (ln *Node) GetPredecessorRPC(ctx context.Context, e *pd.Empty) (*pd.PeerPacket, error) {
 	// TODO make sure that the pointer is valid
 	return form_peer_packet(ln.Predecessor), nil
 }
 
 /* DEBUG RPC */
 
-func (n *Localnode) InitBroadCastRPC(ctx context.Context, b *pd.BlockPacket) (*pd.Empty, error) {
-	log.Printf("Init Broadcast %s", b.Info)
+func (n *Node) InitBroadCastRPC(ctx context.Context, b *pd.BroadCastPacket) (*pd.Empty, error) {
+	// log.Printf("Init Broadcast %s", b.Info)
 
 	// n.ConsensusAPI.AddBlock(mock.Block{Info: b.Info})
-	err := n.BroadCast(b.Info)
+	err := n.BroadCast("")
 
 	return &pd.Empty{}, err
 }
 
-func (n *Localnode) DJoin(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
+func (n *Node) DJoin(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
 	// Debug ports
 	n.Join(utils.ParseIP(p.SrcIp), 8081)
 
 	return &pd.Empty{}, nil
 }
 
-func (n *Localnode) DSetSuccessor(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
+func (n *Node) DSetSuccessor(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
 	n.Successor = parse_peer_packet(p)
 	n.Successor.InitConnection()
 	return &pd.Empty{}, nil
 }
 
-func (n *Localnode) DSetD(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
+func (n *Node) DSetD(ctx context.Context, p *pd.PeerPacket) (*pd.Empty, error) {
 	n.D = parse_peer_packet(p)
 	n.D.InitConnection()
 	return &pd.Empty{}, nil
 }
 
-func (n *Localnode) DGetID(ctx context.Context, e *pd.Empty) (*pd.PeerPacket, error) {
+func (n *Node) DGetID(ctx context.Context, e *pd.Empty) (*pd.PeerPacket, error) {
 	return &pd.PeerPacket{SrcId: n.NodeAddr.String()}, nil
 }
 
-func (n *Localnode) DGetPointers(ctx context.Context, e *pd.Empty) (*pd.Pointers, error) {
+func (n *Node) DGetPointers(ctx context.Context, e *pd.Empty) (*pd.Pointers, error) {
 	return &pd.Pointers{Succ: n.Successor.NodeAddr.String(), D: n.D.NodeAddr.String()}, nil
 }
 
-func (n *Localnode) DLKup(ctx context.Context, p *pd.PeerPacket) (*pd.PeerPacket, error) {
+func (n *Node) DLKup(ctx context.Context, p *pd.PeerPacket) (*pd.PeerPacket, error) {
 	reply, err := n.Lookup(utils.ParseID(p.SrcId))
 	return form_peer_packet(reply), err
 }
 
-func (n *Localnode) DGetBlocks(ctx context.Context, e *pd.Empty) (*pd.BlocksPacket, error) {
+func (n *Node) DGetBlocks(ctx context.Context, e *pd.Empty) (*pd.BlocksPacket, error) {
 	reply := pd.BlocksPacket{}
 
 	// for _, b := range n.ConsensusAPI.GetBlocks() {
@@ -317,11 +317,11 @@ func (n *Localnode) DGetBlocks(ctx context.Context, e *pd.Empty) (*pd.BlocksPack
 	return &reply, nil
 }
 
-/* Localnode API */
+/* Node API */
 
 // Init initializes the first node in the network
 // It inits the Successor, D pointers with default values (node itslef)
-func (ln *Localnode) Init(port int) error {
+func (ln *Node) Init(port int) error {
 	myIP := utils.GetMyIP()
 	ln.NetAddr = &net.TCPAddr{IP: myIP, Port: port}
 	ln.NodeAddr = utils.SHA1OF(ln.NetAddr.String())
@@ -368,7 +368,7 @@ func (ln *Localnode) Init(port int) error {
 
 // Join initializes the node by executing Chord Join Algorithm
 // It inits the Successor, D pointers
-func (ln *Localnode) Join(nodeAddr *net.TCPAddr, port int) error {
+func (ln *Node) Join(nodeAddr *net.TCPAddr, port int) error {
 	log.Printf("Join %s", nodeAddr.String())
 
 	if ln.s == nil {
@@ -409,7 +409,7 @@ func (ln *Localnode) Join(nodeAddr *net.TCPAddr, port int) error {
 	return nil
 }
 
-func (ln *Localnode) Lookup(k ID) (*Peer, error) {
+func (ln *Node) Lookup(k ID) (*Peer, error) {
 	kShift, i := select_imaginary_node(k, ln.NodeAddr, ln.Successor.NodeAddr)
 	log.Printf("init %s %s %s", k.String(), kShift.String(), i.String())
 
@@ -427,7 +427,7 @@ func (ln *Localnode) Lookup(k ID) (*Peer, error) {
 	return parse_peer_packet(reply), err
 }
 
-func (ln *Localnode) BroadCast(info string) error {
+func (ln *Node) BroadCast(info string) error {
 	if !ln.Successor.NodeAddr.Equal(ln.D.NodeAddr) {
 		err := ln.Successor.InitConnection()
 		if err != nil {
@@ -438,7 +438,7 @@ func (ln *Localnode) BroadCast(info string) error {
 		log.Printf("Broadcast %s --> %s limit %s", info, ln.Successor.NetAddr.String(), ln.D.NetAddr.String())
 		ctx, cancel := context.WithTimeout(context.Background(), MAX_REQ_TIME)
 		defer cancel()
-		_, err = ln.Successor.kc.BroadCastRPC(ctx, &pd.BlockPacket{Limit: ln.D.NodeAddr.String(), Info: info})
+		_, err = ln.Successor.kc.BroadCastRPC(ctx, &pd.BroadCastPacket{Limit: ln.D.NodeAddr.String()})
 		if err != nil {
 			log.Fatal(err)
 			return err
@@ -455,7 +455,7 @@ func (ln *Localnode) BroadCast(info string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), MAX_REQ_TIME)
 	defer cancel()
-	_, err = ln.D.kc.BroadCastRPC(ctx, &pd.BlockPacket{Limit: ln.NodeAddr.String(), Info: info})
+	_, err = ln.D.kc.BroadCastRPC(ctx, &pd.BroadCastPacket{Limit: ln.NodeAddr.String()})
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -465,7 +465,7 @@ func (ln *Localnode) BroadCast(info string) error {
 
 }
 
-func (ln *Localnode) stablize() {
+func (ln *Node) stablize() {
 	// log.Println("stablize")
 	if ln.Successor == nil {
 		return
@@ -508,7 +508,7 @@ func (ln *Localnode) stablize() {
 	}
 }
 
-func (ln *Localnode) fixPointers() {
+func (ln *Node) fixPointers() {
 	// log.Println("fix poniter")
 
 	D_id, _ := ln.NodeAddr.LeftShift()
@@ -589,8 +589,8 @@ func select_imaginary_node(k, m, successor ID) (ID, ID) {
 }
 
 // init_grpc_server creates a tcp socket and registers
-// a new grpc server for Localnode.s
-func init_grpc_server(ln *Localnode, port int) error {
+// a new grpc server for Node.s
+func init_grpc_server(ln *Node, port int) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("faild to listen to %v", err)

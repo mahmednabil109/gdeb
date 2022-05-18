@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KoordeClient interface {
 	BootStarpRPC(ctx context.Context, in *BootStrapPacket, opts ...grpc.CallOption) (*BootStrapReply, error)
+	BroadCastRPC(ctx context.Context, in *BroadCastPacket, opts ...grpc.CallOption) (*Empty, error)
 	LookupRPC(ctx context.Context, in *LookupPacket, opts ...grpc.CallOption) (*PeerPacket, error)
 	GetSuccessorRPC(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PeerPacket, error)
 	GetPredecessorRPC(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PeerPacket, error)
@@ -32,9 +33,8 @@ type KoordeClient interface {
 	UpdateDPointerRPC(ctx context.Context, in *PeerPacket, opts ...grpc.CallOption) (*Empty, error)
 	AddDParentRPC(ctx context.Context, in *PeerPacket, opts ...grpc.CallOption) (*Empty, error)
 	RemoveDParentRPC(ctx context.Context, in *PeerPacket, opts ...grpc.CallOption) (*Empty, error)
-	BroadCastRPC(ctx context.Context, in *BlockPacket, opts ...grpc.CallOption) (*Empty, error)
 	// DEBUG RPCS
-	InitBroadCastRPC(ctx context.Context, in *BlockPacket, opts ...grpc.CallOption) (*Empty, error)
+	InitBroadCastRPC(ctx context.Context, in *BroadCastPacket, opts ...grpc.CallOption) (*Empty, error)
 	DGetBlocks(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BlocksPacket, error)
 	DJoin(ctx context.Context, in *PeerPacket, opts ...grpc.CallOption) (*Empty, error)
 	DSetSuccessor(ctx context.Context, in *PeerPacket, opts ...grpc.CallOption) (*Empty, error)
@@ -55,6 +55,15 @@ func NewKoordeClient(cc grpc.ClientConnInterface) KoordeClient {
 func (c *koordeClient) BootStarpRPC(ctx context.Context, in *BootStrapPacket, opts ...grpc.CallOption) (*BootStrapReply, error) {
 	out := new(BootStrapReply)
 	err := c.cc.Invoke(ctx, "/rpc.Koorde/BootStarpRPC", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *koordeClient) BroadCastRPC(ctx context.Context, in *BroadCastPacket, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/rpc.Koorde/BroadCastRPC", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -142,16 +151,7 @@ func (c *koordeClient) RemoveDParentRPC(ctx context.Context, in *PeerPacket, opt
 	return out, nil
 }
 
-func (c *koordeClient) BroadCastRPC(ctx context.Context, in *BlockPacket, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/rpc.Koorde/BroadCastRPC", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *koordeClient) InitBroadCastRPC(ctx context.Context, in *BlockPacket, opts ...grpc.CallOption) (*Empty, error) {
+func (c *koordeClient) InitBroadCastRPC(ctx context.Context, in *BroadCastPacket, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, "/rpc.Koorde/InitBroadCastRPC", in, out, opts...)
 	if err != nil {
@@ -228,6 +228,7 @@ func (c *koordeClient) DLKup(ctx context.Context, in *PeerPacket, opts ...grpc.C
 // for forward compatibility
 type KoordeServer interface {
 	BootStarpRPC(context.Context, *BootStrapPacket) (*BootStrapReply, error)
+	BroadCastRPC(context.Context, *BroadCastPacket) (*Empty, error)
 	LookupRPC(context.Context, *LookupPacket) (*PeerPacket, error)
 	GetSuccessorRPC(context.Context, *Empty) (*PeerPacket, error)
 	GetPredecessorRPC(context.Context, *Empty) (*PeerPacket, error)
@@ -241,9 +242,8 @@ type KoordeServer interface {
 	UpdateDPointerRPC(context.Context, *PeerPacket) (*Empty, error)
 	AddDParentRPC(context.Context, *PeerPacket) (*Empty, error)
 	RemoveDParentRPC(context.Context, *PeerPacket) (*Empty, error)
-	BroadCastRPC(context.Context, *BlockPacket) (*Empty, error)
 	// DEBUG RPCS
-	InitBroadCastRPC(context.Context, *BlockPacket) (*Empty, error)
+	InitBroadCastRPC(context.Context, *BroadCastPacket) (*Empty, error)
 	DGetBlocks(context.Context, *Empty) (*BlocksPacket, error)
 	DJoin(context.Context, *PeerPacket) (*Empty, error)
 	DSetSuccessor(context.Context, *PeerPacket) (*Empty, error)
@@ -260,6 +260,9 @@ type UnimplementedKoordeServer struct {
 
 func (UnimplementedKoordeServer) BootStarpRPC(context.Context, *BootStrapPacket) (*BootStrapReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BootStarpRPC not implemented")
+}
+func (UnimplementedKoordeServer) BroadCastRPC(context.Context, *BroadCastPacket) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BroadCastRPC not implemented")
 }
 func (UnimplementedKoordeServer) LookupRPC(context.Context, *LookupPacket) (*PeerPacket, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LookupRPC not implemented")
@@ -288,10 +291,7 @@ func (UnimplementedKoordeServer) AddDParentRPC(context.Context, *PeerPacket) (*E
 func (UnimplementedKoordeServer) RemoveDParentRPC(context.Context, *PeerPacket) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveDParentRPC not implemented")
 }
-func (UnimplementedKoordeServer) BroadCastRPC(context.Context, *BlockPacket) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BroadCastRPC not implemented")
-}
-func (UnimplementedKoordeServer) InitBroadCastRPC(context.Context, *BlockPacket) (*Empty, error) {
+func (UnimplementedKoordeServer) InitBroadCastRPC(context.Context, *BroadCastPacket) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InitBroadCastRPC not implemented")
 }
 func (UnimplementedKoordeServer) DGetBlocks(context.Context, *Empty) (*BlocksPacket, error) {
@@ -342,6 +342,24 @@ func _Koorde_BootStarpRPC_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KoordeServer).BootStarpRPC(ctx, req.(*BootStrapPacket))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Koorde_BroadCastRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BroadCastPacket)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KoordeServer).BroadCastRPC(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpc.Koorde/BroadCastRPC",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KoordeServer).BroadCastRPC(ctx, req.(*BroadCastPacket))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -508,26 +526,8 @@ func _Koorde_RemoveDParentRPC_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Koorde_BroadCastRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BlockPacket)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(KoordeServer).BroadCastRPC(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rpc.Koorde/BroadCastRPC",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KoordeServer).BroadCastRPC(ctx, req.(*BlockPacket))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Koorde_InitBroadCastRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BlockPacket)
+	in := new(BroadCastPacket)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -539,7 +539,7 @@ func _Koorde_InitBroadCastRPC_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/rpc.Koorde/InitBroadCastRPC",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KoordeServer).InitBroadCastRPC(ctx, req.(*BlockPacket))
+		return srv.(KoordeServer).InitBroadCastRPC(ctx, req.(*BroadCastPacket))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -682,6 +682,10 @@ var Koorde_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Koorde_BootStarpRPC_Handler,
 		},
 		{
+			MethodName: "BroadCastRPC",
+			Handler:    _Koorde_BroadCastRPC_Handler,
+		},
+		{
 			MethodName: "LookupRPC",
 			Handler:    _Koorde_LookupRPC_Handler,
 		},
@@ -716,10 +720,6 @@ var Koorde_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveDParentRPC",
 			Handler:    _Koorde_RemoveDParentRPC_Handler,
-		},
-		{
-			MethodName: "BroadCastRPC",
-			Handler:    _Koorde_BroadCastRPC_Handler,
 		},
 		{
 			MethodName: "InitBroadCastRPC",

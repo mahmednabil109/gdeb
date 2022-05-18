@@ -19,10 +19,10 @@ type Distribution struct {
 //useful when validating transactions (check for enough credit) and validating leaders (computing threshold for leader)
 func LoadStakeDist(file string, stakeDist *map[string]float64) {
 	f, err := os.Open(file)
-	defer f.Close()
 	if err != nil {
 		log.Println("opening config file", err.Error())
 	}
+	defer f.Close()
 
 	var distribution Distribution
 	jsonParser := json.NewDecoder(f)
