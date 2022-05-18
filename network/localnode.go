@@ -322,7 +322,8 @@ func (n *Localnode) DGetBlocks(ctx context.Context, e *pd.Empty) (*pd.BlocksPack
 // Init initializes the first node in the network
 // It inits the Successor, D pointers with default values (node itslef)
 func (ln *Localnode) Init(port int) error {
-	ln.NetAddr = &net.TCPAddr{IP: []byte{127, 0, 0, 1}, Port: port}
+	myIP := utils.GetMyIP()
+	ln.NetAddr = &net.TCPAddr{IP: myIP, Port: port}
 	ln.NodeAddr = utils.SHA1OF(ln.NetAddr.String())
 	ln.Start = ln.NodeAddr
 	ln.Interval = []ID{ln.NodeAddr, ln.NodeAddr}
