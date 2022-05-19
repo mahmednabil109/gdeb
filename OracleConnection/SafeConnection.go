@@ -2,6 +2,7 @@ package OracleConnection
 
 import (
 	"github.com/gorilla/websocket"
+	"log"
 	"sync"
 )
 
@@ -17,7 +18,10 @@ func (conn *SafeConnection) writeMsg(message string) error {
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 	err := conn.conn.WriteMessage(websocket.TextMessage, []byte(message))
+
+	log.Println("Connection send Msg:", message)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	return nil
