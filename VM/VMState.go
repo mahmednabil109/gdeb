@@ -12,21 +12,17 @@ const (
 	Integer dataType = 1
 )
 
-type Message struct {
-	val      string
-	dataType dataType
-}
 type Frame struct {
 	Stack          *Stack
 	pc             uint
-	localVariables []chan Message
+	localVariables []chan OracleConnection.Response
+	buffer         []*OracleConnection.SubscribeMessage
 }
 
 func newFrame() *Frame {
 	return &Frame{
-		Stack:          newStack(),
-		pc:             0,
-		localVariables: []chan Message{},
+		Stack: newStack(),
+		pc:    0,
 	}
 }
 

@@ -109,14 +109,19 @@ func newInstructionInfo() *OperationMapping {
 		gasPrice:       lowGasPrice,
 		pcJump:         0,
 	}
-
-	(*oppArray)[CALLORACLE] = Operation{
-		execute:        OracleOp,
-		stackArgsCount: 5,
-		gasPrice:       superHighGasPrice,
-		pcJump:         1,
+	(*oppArray)[ALLOCATE] = Operation{
+		execute:        AllocateArrayOp,
+		stackArgsCount: 1,
+		gasPrice:       midGasPrice,
+		pcJump:         onePCJump,
 	}
 
+	(*oppArray)[SUBSCRIBE] = Operation{
+		execute:        SubscribeOp,
+		stackArgsCount: 4,
+		gasPrice:       highGasPrice,
+		pcJump:         onePCJump,
+	}
 	return oppArray
 }
 

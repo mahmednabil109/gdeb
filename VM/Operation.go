@@ -1,11 +1,7 @@
 package VM
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/mahmednabil109/gdeb/OracleConnection"
-	"io/ioutil"
-	"net/http"
 )
 
 type (
@@ -147,58 +143,6 @@ func MLoadOp(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func OracleOp(state *State, globalData *GlobalData) error {
-	keyOffset := state.Frame.Stack.Pop().toInt32()
-	keySize := state.Frame.Stack.Pop().toInt32()
-
-	urlOffset := state.Frame.Stack.Pop().toInt32()
-	urlSize := state.Frame.Stack.Pop().toInt32()
-
-	returnIndex := state.Frame.Stack.Pop().toInt32()
-
-	url := string(state.Memory[urlOffset : urlOffset+urlSize])
-	key := string(state.Memory[keyOffset : keyOffset+keySize])
-
-	var messageChannel = make(chan Message)
-	if int(returnIndex) <= len(state.Frame.localVariables) {
-		messageChannel = state.Frame.localVariables[returnIndex]
-	} else {
-		state.Frame.localVariables = append(state.Frame.localVariables, messageChannel)
-	}
-
-	go func() {
-
-		res, err := http.Get(url)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		resBody, err := ioutil.ReadAll(res.Body)
-		defer res.Body.Close()
-
-		bodyMap := make(map[string]interface{})
-		err = json.Unmarshal(resBody, &bodyMap)
-
-		var typeOfData dataType
-
-		if fmt.Sprintf("%T", bodyMap[key]) == "string" {
-			typeOfData = String
-		} else if fmt.Sprintf("%T", bodyMap[key]) == "int" {
-			typeOfData = Integer
-		}
-
-		var msg = Message{
-			dataType: typeOfData,
-			val:      fmt.Sprint(bodyMap[key]),
-		}
-
-		messageChannel <- msg
-
-	}()
-
-	return nil
-}
-
 func JumpOp(state *State, globalData *GlobalData) error {
 	pc := &state.Frame.pc
 	*pc = uint(state.Frame.Stack.Pop().toInt32())
@@ -219,27 +163,32 @@ func JumpIOp(state *State, globalData *GlobalData) error {
 	return nil
 }
 
+func AllocateArrayOp(state *State, _ *GlobalData) error {
+
+	size := state.Frame.Stack.Pop().toInt32()
+	state.Frame.localVariables = make([]chan OracleConnection.Response, size)
+
+	return nil
+}
+
 func SubscribeOp(state *State, globalData *GlobalData) error {
 	stack := state.Frame.Stack
 	key := stack.Pop()
 	size := stack.Pop()
 	offset := stack.Pop()
-
+	index := stack.Pop()
 	url, err := state.Memory.loadString(int(offset.toInt32()), int(size.toInt32()))
 	if err != nil {
 		return err
 	}
 
+	state.Frame.localVariables[index.toInt32()] = make(chan OracleConnection.Response)
 	sub := &OracleConnection.SubscribeMessage{
 		OracleKey: key.toString(),
 		Url:       url,
+		ResChan:   state.Frame.localVariables[index.toInt32()],
 	}
-
 	globalData.OraclePool.SubscribeChannel <- sub
-
-	if err != nil {
-		return err
-	}
-
+	state.Frame.buffer = append(state.Frame.buffer, sub)
 	return nil
 }
