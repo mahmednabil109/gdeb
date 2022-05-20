@@ -24,14 +24,14 @@ func TestNewOraclePool(t *testing.T) {
 		wg.Add(1)
 		log.Println("Entered ", f)
 		for i := 0; i < 5; i++ {
-			subMsg := SubscribeMessage{
-				OracleKey: f,
-				Url:       s,
-				Index:     i,
-				ResChan:   nil,
+			subMsg := &SubscribeMsg{
+				OracleKey:     f,
+				Url:           s,
+				Index:         i,
+				BroadcastChan: nil,
 			}
 			log.Println("Send Msg", i, "in", f)
-			pool.SubscribeChannel <- subMsg
+			pool.SubscribeChan <- subMsg
 			//	time.Sleep(t * time.Millisecond)
 
 		}
@@ -45,8 +45,8 @@ func TestNewOraclePool(t *testing.T) {
 
 	//wg.Wait()
 	time.Sleep(5000 * time.Millisecond)
-	fmt.Println(pool.connections)
-	fmt.Println(pool.subscribers)
+	fmt.Println(pool.Connections)
+	fmt.Println(pool.Subscribers)
 	log.Println(len(s))
 	log.Println(s)
 }

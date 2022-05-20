@@ -7,8 +7,10 @@ import (
 )
 
 type GlobalData struct {
+	Id           int
 	ContractCode []byte
 	OraclePool   OracleConnection.OraclePool
+	receiveChan  chan *OracleConnection.BroadcastMsg
 }
 
 type Interpreter struct {
@@ -22,6 +24,7 @@ func newInterpreter(code *GlobalData, gasLimit uint64) *Interpreter {
 	return &Interpreter{state: newVM(), globalData: code, operationMapping: newInstructionInfo(), gasLimit: gasLimit}
 }
 
+// TODO when error happens --> unsubscribe from the oraclePool
 func (interpreter *Interpreter) execute() error {
 
 	for {

@@ -166,29 +166,30 @@ func JumpIOp(state *State, globalData *GlobalData) error {
 func AllocateArrayOp(state *State, _ *GlobalData) error {
 
 	size := state.Frame.Stack.Pop().toInt32()
-	state.Frame.localVariables = make([]chan OracleConnection.Response, size)
+	state.Frame.localVariables = make([]OracleConnection.BroadcastMsg, size)
 
 	return nil
 }
 
-func SubscribeOp(state *State, globalData *GlobalData) error {
+func SubscribeOp(state *State, data *GlobalData) error {
 	stack := state.Frame.Stack
 	key := stack.Pop()
 	size := stack.Pop()
 	offset := stack.Pop()
-	index := stack.Pop()
+	localVariableIndex := stack.Pop()
 	url, err := state.Memory.loadString(int(offset.toInt32()), int(size.toInt32()))
 	if err != nil {
 		return err
 	}
 
-	state.Frame.localVariables[index.toInt32()] = make(chan OracleConnection.Response)
-	sub := &OracleConnection.SubscribeMessage{
-		OracleKey: key.toString(),
-		Url:       url,
-		ResChan:   state.Frame.localVariables[index.toInt32()],
+	sub := &OracleConnection.SubscribeMsg{
+		VM:            data.Id,
+		OracleKey:     key.toString(),
+		Url:           url,
+		BroadcastChan: data.receiveChan,
+		Index:         int(localVariableIndex.toInt32()),
 	}
-	globalData.OraclePool.SubscribeChannel <- sub
+	//data.OraclePool.SubscribeChan <- sub
 	state.Frame.buffer = append(state.Frame.buffer, sub)
 	return nil
 }

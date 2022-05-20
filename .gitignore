@@ -8,4 +8,4 @@ bin
 VM/TryGO.go
 VM/VM.iml
 VM/Programs
-
+main.go

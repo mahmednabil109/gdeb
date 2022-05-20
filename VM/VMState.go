@@ -15,8 +15,8 @@ const (
 type Frame struct {
 	Stack          *Stack
 	pc             uint
-	localVariables []chan OracleConnection.Response
-	buffer         []*OracleConnection.SubscribeMessage
+	localVariables []OracleConnection.BroadcastMsg
+	buffer         []*OracleConnection.SubscribeMsg
 }
 
 func newFrame() *Frame {

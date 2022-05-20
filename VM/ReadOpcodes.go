@@ -35,13 +35,13 @@ func readOpcodes(fileName string) (res []byte) {
 
 func Read() {
 
-	byteArr := readOpcodes("Program1")
-	code := make(GlobalData, len(byteArr))
-	code = byteArr
-	fmt.Println(len(code))
-	inter := newInterpreter(&code, 1000)
-	err := inter.execute()
-	if err != nil {
-		return
-	}
+	//byteArr := readOpcodes("Program1")
+	//code := make(GlobalData, len(byteArr))
+	//code = byteArr
+	//fmt.Println(len(code))
+	//inter := newInterpreter(&code, 1000)
+	//err := inter.execute()
+	//if err != nil {
+	//	return
+	//}
 }

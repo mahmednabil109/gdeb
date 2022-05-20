@@ -7,19 +7,18 @@ import (
 )
 
 type SafeConnection struct {
-	url             string
-	conn            *websocket.Conn
-	connectionCount int
-	lock            sync.Mutex
+	Url   string
+	conn  *websocket.Conn
+	Count int
+	mutex sync.Mutex
 }
 
 func (conn *SafeConnection) writeMsg(message string) error {
 
-	conn.lock.Lock()
-	defer conn.lock.Unlock()
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
 	err := conn.conn.WriteMessage(websocket.TextMessage, []byte(message))
 
-	log.Println("Connection send Msg:", message)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -27,10 +26,10 @@ func (conn *SafeConnection) writeMsg(message string) error {
 	return nil
 }
 
-func (conn *SafeConnection) readMessage() (*Response, error) {
-	var response *Response
-	conn.lock.Lock()
-	defer conn.lock.Unlock()
+func (conn *SafeConnection) readMessage() (*BroadcastMsg, error) {
+	var response *BroadcastMsg
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
 	err := conn.conn.ReadJSON(response)
 	if err != nil {
 		return nil, err
@@ -39,15 +38,25 @@ func (conn *SafeConnection) readMessage() (*Response, error) {
 }
 
 func (conn *SafeConnection) incCount() {
-	conn.lock.Lock()
-	defer conn.lock.Unlock()
-	conn.connectionCount++
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	conn.Count++
+}
+
+func (conn *SafeConnection) close() {
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	err := conn.conn.Close()
+	if err != nil {
+		log.Println("Error in closing Safe Conn:", err)
+		return
+	}
 }
 
 func (conn *SafeConnection) decCount() {
-	conn.lock.Lock()
-	defer conn.lock.Unlock()
-	if conn.connectionCount > 0 {
-		conn.connectionCount--
+	conn.mutex.Lock()
+	defer conn.mutex.Unlock()
+	if conn.Count > 0 {
+		conn.Count--
 	}
 }
