@@ -1,0 +1,44 @@
+{
+  "Stakeholders": [
+    {
+      "PublicKey": "bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0",
+      "Stake": 0.20581113801452786
+    },
+    {
+      "PublicKey": "f54ab000692a079e1ae6af2cf9a847a5ab1189acd94a94a7b95516f01a32afba",
+      "Stake": 0.007263922518159807
+    },
+    {
+      "PublicKey": "2baacb72b3dd3b6dde955676164f331daa2adb0c4c5f03688737f7f849d1d08f",
+      "Stake": 0.11380145278450363
+    },
+    {
+      "PublicKey": "5a4326ff44b9e03f8da1bc289debd47e5cdfca1943303aff5ff4345cd8653fb8",
+      "Stake": 0.14285714285714285
+    },
+    {
+      "PublicKey": "31afe63200fcd349ee793bed509b27d4e35a84770b1fa0718a006c8eafe8a03d",
+      "Stake": 0
+    },
+    {
+      "PublicKey": "7f5e2cf89f279cbcf4038521c5a77d22de3da42586cba87dfdc1699ca3f44b70",
+      "Stake": 0.13559322033898305
+    },
+    {
+      "PublicKey": "20d2c80a40102d92ea8daf90fdbe42adb42409a9ce2c20352fa8c7ce2fb1bdb5",
+      "Stake": 0.029055690072639227
+    },
+    {
+      "PublicKey": "11bb61be3bd53e1f69e307bfc190438d6c6bd14300f5f86e7cce746ba1a67389",
+      "Stake": 0.19128329297820823
+    },
+    {
+      "PublicKey": "53fcc847c663ac1ae7ed4ad59a216c8b7d53c9d1e0b288c91ddde444c6f63477",
+      "Stake": 0.11138014527845036
+    },
+    {
+      "PublicKey": "2c39f5fc956e397083d3ec5511324ac7f0136d207d7fc76b51682006bc862803",
+      "Stake": 0.06295399515738499
+    }
+  ]
+}

@@ -1,76 +1,57 @@
 package main
 
 import (
-	"github.com/mahmednabil109/gdeb/OracleConnection"
+	"crypto/ed25519"
+	"encoding/hex"
+	"fmt"
+	"github.com/mahmednabil109/gdeb/communication"
+	"github.com/mahmednabil109/gdeb/config"
+	"github.com/mahmednabil109/gdeb/consensus"
+	"github.com/mahmednabil109/gdeb/data"
+	"github.com/yoseplee/vrf"
 	"log"
-	"sync"
-	"time"
 )
 
-var wg sync.WaitGroup
+var stakeDist map[string]float64
+var deployedContracts []string
+var privateKey ed25519.PrivateKey
+var communNetwCons communication.CommunNetwCons
+
+func setup() {
+	config := config.New()
+	pk := config.NodeKey()
+	privateKey = pk
+
+	data.LoadStakeDist("stakeDistribution.json", &stakeDist)
+
+	communNetwCons = communication.CommunNetwCons{
+		ChanNetBlock:        make(chan data.Block),
+		ChanNetTransaction:  make(chan data.Transaction),
+		ChanConsBlock:       make(chan data.Block),
+		ChanConsTransaction: make(chan data.Transaction),
+	}
+
+	//same behavior but for deployed contracts, useful for transactions the execute a contract (contract should exist to begin with)
+	// data.LoadContracts("deployedContracts.json", &deployedContracts)
+}
 
 func main() {
+	setup()
 
-	pool := OracleConnection.NewOraclePool()
+	// suggestion to set up communication/ pass channels between different modules
+	// cons := consensus.New(&communNetwCons)
+	// netw := network.New(&communNetwCons)
 
-	topics := []string{"Temperature", "RicePrice", "Hamda"}
-
-	broadcastChan := make(chan *OracleConnection.BroadcastMsg)
-	idx := 0
-	goFunc := func(id int) {
-		topic := 0
-		if id < 2 {
-			topic = 1
-		} else if id < 4 {
-			topic = 2
-		}
-		for j := 0; j < 3; j++ {
-			subMsg1 := OracleConnection.SubscribeMsg{
-				VM:            id,
-				OracleKey:     topics[topic],
-				Url:           "127.0.0.1:8383",
-				Index:         idx,
-				BroadcastChan: broadcastChan,
-			}
-			idx++
-			pool.SubscribeChan <- &subMsg1
-		}
-		wg.Done()
+	//code snippet to test ValidateLeader function
+	PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
+	PrivateKey, _ := hex.DecodeString("e70b0983a423db62605c527109306d67e16a69d2f4d6641183242e1eac462d27bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
+	nonce := 053464
+	proofBytes, _, err := vrf.Prove(PublicKey, PrivateKey, []byte(fmt.Sprint(nonce)))
+	if err != nil {
+		log.Println(err)
 	}
 
-	for i := 0; i < 6; i++ {
-		wg.Add(1)
-		go goFunc(i)
-	}
-	wg.Wait()
-	time.Sleep(1000)
-	for _, v := range pool.Subscribers {
-		log.Println(v.Index)
-	}
-
-	isBroadcast := false
-	for {
-		select {
-		case res := <-broadcastChan:
-			log.Println(res.Value, res.Index)
-			if res.Value == "0" {
-				for _, v := range pool.Subscribers {
-					log.Println(v)
-				}
-
-				for k, v := range pool.Connections {
-					log.Println(k, ":", v)
-				}
-			} else if res.Value == "1" && !isBroadcast {
-				isBroadcast = true
-				msg := &OracleConnection.UnsubscribeMsg{
-					VM: 0,
-				}
-				log.Println("Res =", 1)
-				log.Println("Msg =", msg)
-				pool.UnsubscribeChan <- msg
-			}
-		}
-	}
+	val := consensus.ValidateLeader(nonce, PublicKey, proofBytes, stakeDist)
+	log.Println(val)
 
 }
