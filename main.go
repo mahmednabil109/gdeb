@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/config"
 	"github.com/mahmednabil109/gdeb/consensus"
 	"github.com/mahmednabil109/gdeb/data"
@@ -14,6 +15,7 @@ import (
 var stakeDist map[string]float64
 var deployedContracts []string
 var privateKey ed25519.PrivateKey
+var communNetwCons communication.CommunNetwCons
 
 func setup() {
 	config := config.New()
@@ -21,12 +23,24 @@ func setup() {
 	privateKey = pk
 
 	data.LoadStakeDist("stakeDistribution.json", &stakeDist)
+
+	communNetwCons = communication.CommunNetwCons{
+		ChanNetBlock:        make(chan data.Block),
+		ChanNetTransaction:  make(chan data.Transaction),
+		ChanConsBlock:       make(chan data.Block),
+		ChanConsTransaction: make(chan data.Transaction),
+	}
+
 	//same behavior but for deployed contracts, useful for transactions the execute a contract (contract should exist to begin with)
 	// data.LoadContracts("deployedContracts.json", &deployedContracts)
 }
 
 func main() {
 	setup()
+
+	// suggestion to set up communication/ pass channels between different modules
+	// cons := consensus.New(&communNetwCons)
+	// netw := network.New(&communNetwCons)
 
 	//code snippet to test ValidateLeader function
 	PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
