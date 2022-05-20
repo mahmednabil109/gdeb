@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package rpc;
+
+option go_package = "github.com/mahmednabil109/gdeb/network/rpc";
+
+service Koorde {
+  rpc BootStarpRPC(BootStrapPacket) returns (BootStrapReply) {}
+  rpc BroadCastRPC(BroadCastPacket) returns (Empty) {}
+  rpc LookupRPC(LookupPacket) returns (PeerPacket) {}
+  rpc GetSuccessorRPC(Empty) returns (PeerPacket) {}
+  rpc GetPredecessorRPC(Empty) returns (PeerPacket) {}
+  // UpdatePredecessor takes new pred and returns the old one
+  rpc UpdatePredecessorRPC(PeerPacket) returns (PeerPacket) {}
+  // UpdateSuccessor takes new succ and retursn the Dpointer parents that the
+  // new node should contact
+  rpc UpdateSuccessorRPC(PeerListPacket) returns (PeerListPacket) {}
+  // UpdateDPointer updates the Dpointer with new successor that should handel
+  rpc NotifyRPC(PeerPacket) returns (Empty) {}
+  rpc UpdateDPointerRPC(PeerPacket) returns (Empty) {}
+  rpc AddDParentRPC(PeerPacket) returns (Empty) {}
+  rpc RemoveDParentRPC(PeerPacket) returns (Empty) {}
+
+  // DEBUG RPCS
+  rpc InitBroadCastRPC(BroadCastPacket) returns (Empty) {}
+  rpc DGetBlocks(Empty) returns (BlocksPacket) {}
+  rpc DJoin(PeerPacket) returns (Empty) {}
+  rpc DSetSuccessor(PeerPacket) returns (Empty) {}
+  rpc DSetD(PeerPacket) returns (Empty) {}
+  rpc DGetID(Empty) returns (PeerPacket) {}
+  rpc DGetPointers(Empty) returns (Pointers) {}
+  rpc DLKup(PeerPacket) returns (PeerPacket) {}
+}
+
+// DEBUG MSGs
+message Pointers {
+  string succ = 1;
+  string d = 2;
+}
+//
+
+message PeerListPacket { repeated PeerPacket peers = 1; }
+
+message PeerPacket {
+  string src_id = 1;
+  string src_ip = 2;
+  string start = 3;
+  repeated string interval = 4;
+}
+
+message LookupPacket {
+  string src_id = 1;
+  string src_ip = 2;
+  string k = 3;
+  string kShift = 4;
+  string i = 5;
+}
+
+enum PacketType {
+  TransT = 0;
+  BlockT = 1;
+}
+
+message BroadCastPacket {
+
+  PacketType Type = 1;
+  Block Block = 2;
+  Transaction Trans = 3;
+  string Limit = 4;
+}
+
+message Transaction {
+  uint64 Nonce = 1;
+  string From = 2;
+  string To = 3;
+  uint64 Amount = 4;
+  string Timestamp = 5;
+  bytes ContractCode = 6;
+  uint64 GasPrice = 7;
+  uint64 GasLimit = 8;
+  string ContractAddress = 9;
+  string Signature = 10;
+}
+
+message Block {
+  string PreviousHash = 1;
+  int32 Slot = 2;
+  string VrfOutput = 3;
+  string VrfProof = 4;
+  string SlotLeader = 5;
+  repeated Transaction Transactions = 6;
+  string Nonce = 7;
+  repeated StackHolder StakeDistribution = 8;
+  string Signature = 10;
+}
+
+message StackHolder {
+  string PublickKey = 1;
+  double Stack = 2;
+}
+
+message BlocksPacket { repeated Block block = 1; }
+
+message BootStrapPacket {
+  string src_id = 1;
+  string src_ip = 2;
+}
+
+message BootStrapReply {
+  PeerPacket Successor = 1;
+  PeerPacket D = 2;
+}
+
+message Empty {}
