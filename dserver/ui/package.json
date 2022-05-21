@@ -1,0 +1,18 @@
+{
+  "name": "dserver-ui",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "vite": "^2.9.9"
+  },
+  "dependencies": {
+    "@types/d3": "^7.1.0",
+    "d3": "^7.4.4"
+  }
+}
