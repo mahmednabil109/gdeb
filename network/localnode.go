@@ -565,6 +565,7 @@ func (ln *Node) BroadCastRPC(ctx context.Context, b *rpc.BroadCastPacket) (*rpc.
 				return nil, err
 			}
 
+			b.Limit = LimitID.String()
 			// log.Printf("Broadcast %s --> %s limit %s", b.Info, ln.D.NetAddr.String(), b.Limit)
 			ctx, cancel := context.WithTimeout(context.Background(), MAX_REQ_TIME)
 			defer cancel()
