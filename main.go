@@ -1,57 +1,52 @@
 package main
 
 import (
-	"crypto/ed25519"
-	"encoding/hex"
+	"flag"
 	"fmt"
-	"github.com/mahmednabil109/gdeb/communication"
-	"github.com/mahmednabil109/gdeb/config"
-	"github.com/mahmednabil109/gdeb/consensus"
-	"github.com/mahmednabil109/gdeb/data"
-	"github.com/yoseplee/vrf"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/mahmednabil109/gdeb/network"
+	"github.com/mahmednabil109/gdeb/network/utils"
 )
 
-var stakeDist map[string]float64
-var deployedContracts []string
-var privateKey ed25519.PrivateKey
-var communNetwCons communication.CommunNetwCons
-
-func setup() {
-	config := config.New()
-	pk := config.NodeKey()
-	privateKey = pk
-
-	data.LoadStakeDist("stakeDistribution.json", &stakeDist)
-
-	communNetwCons = communication.CommunNetwCons{
-		ChanNetBlock:        make(chan data.Block),
-		ChanNetTransaction:  make(chan data.Transaction),
-		ChanConsBlock:       make(chan data.Block),
-		ChanConsTransaction: make(chan data.Transaction),
-	}
-
-	//same behavior but for deployed contracts, useful for transactions the execute a contract (contract should exist to begin with)
-	// data.LoadContracts("deployedContracts.json", &deployedContracts)
-}
+var (
+	port      = flag.Int("port", 16585, "port for grpc of the localnode")
+	first     = flag.Int("first", 1, "flag to mark the node as the first in the network")
+	bootstrap = flag.String("bootstrap", "127.0.0.1:16585", "ip for bootstraping node")
+)
 
 func main() {
-	setup()
+	flag.Parse()
 
-	// suggestion to set up communication/ pass channels between different modules
-	// cons := consensus.New(&communNetwCons)
-	// netw := network.New(&communNetwCons)
+	var n network.Node
 
-	//code snippet to test ValidateLeader function
-	PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
-	PrivateKey, _ := hex.DecodeString("e70b0983a423db62605c527109306d67e16a69d2f4d6641183242e1eac462d27bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
-	nonce := 053464
-	proofBytes, _, err := vrf.Prove(PublicKey, PrivateKey, []byte(fmt.Sprint(nonce)))
+	err := n.Init(*port)
 	if err != nil {
-		log.Println(err)
+		log.Printf("faild to init the localnode: %v", err)
+	}
+	f, err := os.Create(fmt.Sprintf("%s.log", n.NetAddr.String()))
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
+	if *first == 0 {
+		log.Println("start to join")
+		n.Join(utils.ParseIP(*bootstrap), *port)
+		log.Printf("nodeID %v", n)
+		log.Printf("Successor %v", n.Successor)
+		log.Printf("D %v", n.D)
+		log.Printf("Predecessor %v", n.Predecessor)
 	}
 
-	val := consensus.ValidateLeader(nonce, PublicKey, proofBytes, stakeDist)
-	log.Println(val)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT)
+	<-sigs
 
+	// n.NodeShutdown <- true
+	log.Printf("Programe ended")
 }

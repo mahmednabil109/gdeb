@@ -10,6 +10,7 @@ import (
 
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/data"
+	"github.com/mahmednabil109/gdeb/dserver/client"
 	"github.com/mahmednabil109/gdeb/network/rpc"
 	"github.com/mahmednabil109/gdeb/network/utils"
 	"google.golang.org/grpc"
@@ -34,6 +35,9 @@ type Node struct {
 	ChanNetTransaction  chan<- data.Transaction
 	ChanConsBlock       <-chan data.Block
 	ChanConsTransaction <-chan data.Transaction
+
+	// Dserver client
+	Dclient client.Client
 
 	// private
 	s *grpc.Server
@@ -85,12 +89,20 @@ func (ln *Node) Init(port int) error {
 
 	// stablize
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(800 * time.Millisecond)
 
 		for {
 			select {
 			case <-ticker.C:
 				ln.stablize()
+				// dserver update
+				go func() {
+					ln.Dclient.Update(
+						ln.NodeAddr.String(),
+						ln.Successor.NodeAddr.String(),
+						ln.D.NodeAddr.String(),
+					)
+				}()
 			case <-ln.NodeShutdown:
 				ticker.Stop()
 				return
@@ -112,6 +124,9 @@ func (ln *Node) Init(port int) error {
 			}
 		}
 	}()
+
+	// DServer client init
+	ln.Dclient.Init("127.0.0.1:16585")
 
 	return err
 }

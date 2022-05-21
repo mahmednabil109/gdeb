@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package drpc;
+
+option go_package = "github.com/mahmednabil109/gdeb/dserver/drpc";
+
+service DServer {
+  rpc UpdatePointers(Pointers) returns (Empty) {};
+}
+
+message Pointers {
+  string id = 1;
+  string successor = 2;
+  string d = 3;
+}
+
+message Empty {}

@@ -1,10 +1,10 @@
-package network
+package client
 
 import (
+	"context"
 	"log"
-	"net"
 
-	pd "github.com/mahmednabil109/gdeb/network/rpc"
+	"github.com/mahmednabil109/gdeb/dserver/drpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -12,7 +12,7 @@ import (
 var (
 	RetryPolicy = `{
 		"methodConfig": [{
-		  "name": [{"service": "rpc.Koorde"}],
+		  "name": [{"service": "drpc.DServer"}],
 		  "waitForReady": true,
 		  "retryPolicy": {
 			  "MaxAttempts": 4,
@@ -24,38 +24,35 @@ var (
 		}]}`
 )
 
-type Peer struct {
-	NetAddr  *net.TCPAddr
-	NodeAddr ID
-	Start    ID
-	Interval []ID
-	kc       pd.KoordeClient
-	conn     *grpc.ClientConn
+type Client struct {
+	dc   drpc.DServerClient
+	conn *grpc.ClientConn
 }
 
-func (p *Peer) InitConnection() error {
-	if p.kc != nil {
+func (c *Client) Init(addr string) error {
+	if c.conn != nil {
 		return nil
 	}
 
 	conn, err := grpc.Dial(
-		p.NetAddr.String(),
+		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(RetryPolicy),
 	)
-
 	if err != nil {
-		log.Fatalf("can't dial: %v", err)
+		log.Print(err)
 		return err
 	}
-	p.conn = conn
 
-	p.kc = pd.NewKoordeClient(p.conn)
-	log.Printf("connection Done With %s", p.NetAddr.String())
+	c.conn = conn
+	c.dc = drpc.NewDServerClient(c.conn)
+	log.Printf("conn done with %s", addr)
 	return nil
 }
 
-func (p *Peer) CloseConnection() {
-	p.kc = nil
-	p.conn.Close()
+func (c *Client) Update(id, successor, d string) {
+	_, err := c.dc.UpdatePointers(context.Background(), &drpc.Pointers{Id: id, Successor: successor, D: d})
+	if err != nil {
+		log.Print(err)
+	}
 }
