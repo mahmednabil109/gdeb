@@ -1,0 +1,177 @@
+[33mcommit d2cb24cfc076cb16e028229232d605dffe647f44[m[33m ([m[1;36mHEAD -> [m[1;32mAccount[m[33m)[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Tue May 24 14:46:51 2022 +0200
+
+    Refactored OracleListener
+
+[33mcommit 7836f7fb244389b1c4b832228d6617c098eaeb28[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Tue May 24 13:57:08 2022 +0200
+
+    Refactored Interpreter
+
+[33mcommit e838d0d4dc7d2f7a0b8b14abac4f0cfa0cbc0c0e[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/VM[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m, [m[1;32mVM[m[33m)[m
+Merge: 8e1305f 4771375
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Sat May 21 14:44:37 2022 +0200
+
+    Merge branch 'master' of https://github.com/mahmednabil109/gdeb into VM
+
+[33mcommit 4771375b469c3b901f29d7edec3fa15cc7f12020[m
+Merge: 61c7283 ac8b61e
+Author: ‪mahmed nabil‬‏ <61705839+mahmednabil109@users.noreply.github.com>
+Date:   Fri May 20 18:55:20 2022 +0200
+
+    Merge pull request #7 from mahmednabil109/feat/NetworkLayer
+    
+    fix/ broadcast bug
+
+[33mcommit ac8b61e8d46ad22a75a79b3020268d4c05283ca0[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Fri May 20 18:54:43 2022 +0200
+
+    fix/ broadcast bug
+
+[33mcommit 8e1305f92238ae996775654380841b3857884b3e[m
+Merge: d517325 61c7283
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Fri May 20 16:35:01 2022 +0200
+
+    Merged VM with Master
+
+[33mcommit d517325ce4bed12a85d3d7ccbda0c106c98d6057[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Fri May 20 16:28:01 2022 +0200
+
+    Added MessageStruct and fixed bugs in unsubscribe
+
+[33mcommit 61c72839a54d959bf2cb001d5bf3a49ae971a7cf[m
+Merge: dadcf66 d06cec4
+Author: ‪mahmed nabil‬‏ <61705839+mahmednabil109@users.noreply.github.com>
+Date:   Fri May 20 16:24:45 2022 +0200
+
+    Merge pull request #6 from mahmednabil109/feat/NetworkLayer
+    
+    Feat/network layer
+
+[33mcommit d06cec4fb12160ac251040f1d6c8e0fac3383853[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Fri May 20 16:12:12 2022 +0200
+
+    update readme
+
+[33mcommit cc8ab1a57f5680f72c7d4a2fc37e460ebede84e7[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Fri May 20 16:11:18 2022 +0200
+
+    init inter-module communication
+
+[33mcommit 5250d0af158c382fb7f617a66df225d30a65e33a[m
+Merge: 16808cd dadcf66
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Fri May 20 14:13:41 2022 +0200
+
+    Merge remote-tracking branch 'origin/master' into feat/NetworkLayer
+
+[33mcommit dadcf664beaadec2c76dde83f8982b86a2f29caf[m
+Merge: 0e61207 307dc87
+Author: ‪mahmed nabil‬‏ <61705839+mahmednabil109@users.noreply.github.com>
+Date:   Fri May 20 14:12:40 2022 +0200
+
+    Merge pull request #5 from mahmednabil109/consensus_layer
+    
+    setting up communication between network and consensus using channels…
+
+[33mcommit fb39a1e7ce9ea53d3d1396366110b15eb1bdb436[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Thu May 19 20:56:51 2022 +0200
+
+    Tested OracleHandler
+
+[33mcommit 0fc0812e51c79ebb8679d016e6b16553ccb2e480[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Thu May 19 08:04:05 2022 +0200
+
+    finished allocate and subscribe operations
+
+[33mcommit f375a737bca727b02904f28bd0f7849b11741f0c[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Wed May 18 15:54:51 2022 +0200
+
+    added go.mod
+
+[33mcommit e0ec8e89d79fa257a2b0699743cbf28ae35b941a[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Wed May 18 15:48:17 2022 +0200
+
+    Finished OracleHandler.go
+
+[33mcommit 16808cdace91d4d2fa2f03da8790dc22c1b120be[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Wed May 18 15:39:34 2022 +0200
+
+    add/transcation&block
+
+[33mcommit f4f841eaadf9c659fa0ec3620577f3fe9817657d[m
+Merge: 308c006 4a1e579
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Wed May 18 10:21:45 2022 +0200
+
+    Merge remote-tracking branch 'origin/consensus_layer' into feat/NetworkLayer
+
+[33mcommit 308c00630fbf66dce13b92529d62bbb17cbc0e88[m[33m ([m[1;31morigin/feat/NetworkLayer[m[33m, [m[1;32mfeat/NetworkLayer[m[33m)[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Wed May 18 10:18:57 2022 +0200
+
+    fix/ip bug
+
+[33mcommit 0e612076b664240707821590fb6a5706a857cc2e[m
+Merge: 467670a 4a1e579
+Author: ‪mahmed nabil‬‏ <61705839+mahmednabil109@users.noreply.github.com>
+Date:   Wed May 18 10:16:07 2022 +0200
+
+    Merge pull request #4 from mahmednabil109/consensus_layer
+    
+    consensus layer first commit
+
+[33mcommit 307dc87b2f6fb15adf154854188a263e9b16bf24[m[33m ([m[1;31morigin/consensus_layer[m[33m, [m[1;32mconsensus_layer[m[33m)[m
+Author: Husseljo <husseljoo@gmail.com>
+Date:   Wed May 18 00:53:06 2022 +0200
+
+    setting up communication between network and consensus using channels with corresponding direction
+
+[33mcommit 4a1e5795a00497021bd8a9dad274f9a9af3a681c[m
+Author: Husseljo <husseljoo@gmail.com>
+Date:   Tue May 17 10:00:41 2022 +0200
+
+    consensus layer first commit
+
+[33mcommit 8725aa702b006e42c5b72fceefa18704e09423f0[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Tue May 17 09:12:50 2022 +0200
+
+    initial commit
+
+[33mcommit b16d30a651ad1b36894f22d88d8eb18c3e9016b4[m
+Author: Mohamed Shetewi <Muhamedshetewi@gmail.com>
+Date:   Tue May 17 09:11:10 2022 +0200
+
+    initial commit
+
+[33mcommit 2b5483e15c01bb9ab12f4b10cefa0c91adc9cea3[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Mon May 16 19:40:15 2022 +0200
+
+    add/add readme  :)
+
+[33mcommit 1a4d87ca8ddba1866b17a533e3c8689980b905ba[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Mon May 16 19:38:54 2022 +0200
+
+    add/add network code
+
+[33mcommit 467670a1fcf562bae33d14712f924d71320db106[m
+Author: mahmednabil109 <mahmednabil109@gmail.com>
+Date:   Sat May 14 01:23:43 2022 +0200
+
+    init/init the repo

@@ -1,7 +1,7 @@
 package VM
 
 import (
-	"github.com/mahmednabil109/gdeb/OracleConnection"
+	"github.com/mahmednabil109/gdeb/OracleListener"
 )
 
 type (
@@ -181,7 +181,7 @@ func AllocateArrayOp(interpreter *Interpreter) error {
 	state := interpreter.state
 
 	size := state.Frame.Stack.Pop().toInt32()
-	state.Frame.localVariables = make([]OracleConnection.BroadcastMsg, size)
+	state.Frame.localVariables = make([]OracleListener.BroadcastMsg, size)
 
 	return nil
 }
@@ -200,7 +200,7 @@ func SubscribeOp(interpreter *Interpreter) error {
 		return err
 	}
 
-	sub := &OracleConnection.SubscribeMsg{
+	sub := &OracleListener.SubscribeMsg{
 		VmId:          interpreter.Id,
 		OracleKey:     key.toString(),
 		KeyType:       int(keyType.toInt32()),

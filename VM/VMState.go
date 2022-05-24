@@ -1,7 +1,7 @@
 package VM
 
 import (
-	"github.com/mahmednabil109/gdeb/OracleConnection"
+	"github.com/mahmednabil109/gdeb/OracleListener"
 	"strconv"
 )
 
@@ -15,8 +15,8 @@ const (
 type Frame struct {
 	Stack          *Stack
 	pc             uint
-	localVariables []OracleConnection.BroadcastMsg
-	buffer         []*OracleConnection.SubscribeMsg
+	localVariables []OracleListener.BroadcastMsg
+	buffer         []*OracleListener.SubscribeMsg
 }
 
 func newFrame() *Frame {
@@ -30,7 +30,7 @@ type State struct {
 	Memory      Memory
 	Frame       *Frame
 	consumedGas uint64
-	OracleConnection.OraclePool
+	OracleListener.OraclePool
 }
 
 func newVM() *State {

@@ -1,4 +1,4 @@
-package OracleConnection
+package OracleListener
 
 import (
 	"errors"
@@ -142,6 +142,7 @@ func (pool *OraclePool) broadcast(msg OracleMsg) {
 
 	}
 }
+
 func (pool *OraclePool) addSubscriber(subMsg *SubscribeMsg) {
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()

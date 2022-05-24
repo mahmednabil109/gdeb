@@ -3,7 +3,7 @@ package VM
 import (
 	"errors"
 	"fmt"
-	"github.com/mahmednabil109/gdeb/OracleConnection"
+	"github.com/mahmednabil109/gdeb/OracleListener"
 )
 
 type GlobalData struct {
@@ -13,19 +13,19 @@ type Interpreter struct {
 	Id               int
 	state            *State
 	ContractCode     []byte
-	OraclePool       *OracleConnection.OraclePool
-	ReceiveChan      chan *OracleConnection.BroadcastMsg
+	OraclePool       *OracleListener.OraclePool
+	ReceiveChan      chan *OracleListener.BroadcastMsg
 	operationMapping *OperationMapping
 	gasLimit         uint64
 }
 
-func newInterpreter(id int, contractCode []byte, pool *OracleConnection.OraclePool, gasLimit uint64) *Interpreter {
+func newInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool, gasLimit uint64) *Interpreter {
 	return &Interpreter{
 		Id:               id,
 		state:            newVM(),
 		ContractCode:     contractCode,
 		OraclePool:       pool,
-		ReceiveChan:      make(chan *OracleConnection.BroadcastMsg),
+		ReceiveChan:      make(chan *OracleListener.BroadcastMsg),
 		operationMapping: newInstructionInfo(),
 		gasLimit:         gasLimit,
 	}

@@ -1,4 +1,4 @@
-package OracleConnection
+package OracleListener
 
 type UnsubscribeMsg struct {
 	VM int

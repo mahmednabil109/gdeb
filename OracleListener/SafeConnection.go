@@ -1,4 +1,4 @@
-package OracleConnection
+package OracleListener
 
 import (
 	"github.com/gorilla/websocket"
