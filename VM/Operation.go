@@ -5,10 +5,11 @@ import (
 )
 
 type (
-	OperationType func(*State, *GlobalData) error
+	OperationType func(interpreter *Interpreter) error
 )
 
-func AddOP(state *State, globalData *GlobalData) error {
+func AddOP(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -19,7 +20,8 @@ func AddOP(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func SubOP(state *State, globalData *GlobalData) error {
+func SubOP(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -30,7 +32,8 @@ func SubOP(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func MulOP(state *State, globalData *GlobalData) error {
+func MulOP(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -43,7 +46,8 @@ func MulOP(state *State, globalData *GlobalData) error {
 }
 
 //GreaterOp Return 1 if a > b
-func GreaterOp(state *State, globalData *GlobalData) error {
+func GreaterOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -64,7 +68,8 @@ func GreaterOp(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func XorOP(state *State, globalData *GlobalData) error {
+func XorOP(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -74,7 +79,8 @@ func XorOP(state *State, globalData *GlobalData) error {
 
 	return nil
 }
-func AndOP(state *State, globalData *GlobalData) error {
+func AndOP(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -84,7 +90,8 @@ func AndOP(state *State, globalData *GlobalData) error {
 
 	return nil
 }
-func OrOP(state *State, globalData *GlobalData) error {
+func OrOP(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	b := stack.Pop()
@@ -94,7 +101,8 @@ func OrOP(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func NotOP(state *State, globalData *GlobalData) error {
+func NotOP(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 
 	a := stack.Pop()
@@ -103,22 +111,25 @@ func NotOP(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func PushOp(state *State, globalData *GlobalData) error {
+func PushOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
 	newData := NewDataWord()
-	newData.SetDataWord(globalData.ContractCode[state.Frame.pc+1 : state.Frame.pc+33])
+	newData.SetDataWord(interpreter.ContractCode[state.Frame.pc+1 : state.Frame.pc+33])
 	stack.Push(newData)
 	return nil
 
 }
 
-func PopOp(state *State, globalData *GlobalData) error {
+func PopOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	state.Frame.Stack.Pop()
 	return nil
 
 }
 
-func MStoreOp(state *State, globalData *GlobalData) error {
+func MStoreOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	mem := state.Memory
 
 	offset, value := state.Frame.Stack.Pop().toInt32(), state.Frame.Stack.Pop().toByteArray()
@@ -127,7 +138,8 @@ func MStoreOp(state *State, globalData *GlobalData) error {
 
 }
 
-func MLoadOp(state *State, globalData *GlobalData) error {
+func MLoadOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	mem := state.Memory
 	offset := state.Frame.Stack.Pop().toInt32()
 	size := state.Frame.Stack.Pop().toInt32()
@@ -143,17 +155,19 @@ func MLoadOp(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func JumpOp(state *State, globalData *GlobalData) error {
+func JumpOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	pc := &state.Frame.pc
 	*pc = uint(state.Frame.Stack.Pop().toInt32())
 	return nil
 }
 
 // JumpIOp conditional Jump
-func JumpIOp(state *State, globalData *GlobalData) error {
+func JumpIOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	pc := &state.Frame.pc
-	check := state.Frame.Stack.Pop().toInt32()
 	nextInstruction := state.Frame.Stack.Pop().toInt32()
+	check := state.Frame.Stack.Pop().toInt32()
 
 	if check == 1 {
 		*pc = uint(nextInstruction)
@@ -163,7 +177,8 @@ func JumpIOp(state *State, globalData *GlobalData) error {
 	return nil
 }
 
-func AllocateArrayOp(state *State, _ *GlobalData) error {
+func AllocateArrayOp(interpreter *Interpreter) error {
+	state := interpreter.state
 
 	size := state.Frame.Stack.Pop().toInt32()
 	state.Frame.localVariables = make([]OracleConnection.BroadcastMsg, size)
@@ -171,25 +186,34 @@ func AllocateArrayOp(state *State, _ *GlobalData) error {
 	return nil
 }
 
-func SubscribeOp(state *State, data *GlobalData) error {
+func SubscribeOp(interpreter *Interpreter) error {
+	state := interpreter.state
 	stack := state.Frame.Stack
+	localVariableIndex := stack.Pop()
+	keyType := stack.Pop()
 	key := stack.Pop()
 	size := stack.Pop()
 	offset := stack.Pop()
-	localVariableIndex := stack.Pop()
+
 	url, err := state.Memory.loadString(int(offset.toInt32()), int(size.toInt32()))
 	if err != nil {
 		return err
 	}
 
 	sub := &OracleConnection.SubscribeMsg{
-		VM:            data.Id,
+		VmId:          interpreter.Id,
 		OracleKey:     key.toString(),
+		KeyType:       int(keyType.toInt32()),
 		Url:           url,
-		BroadcastChan: data.receiveChan,
+		BroadcastChan: interpreter.ReceiveChan,
 		Index:         int(localVariableIndex.toInt32()),
 	}
-	//data.OraclePool.SubscribeChan <- sub
 	state.Frame.buffer = append(state.Frame.buffer, sub)
+	return nil
+}
+
+// FetchDataOp TODO return error if no such oracle
+func FetchDataOp(interpreter *Interpreter) error {
+
 	return nil
 }

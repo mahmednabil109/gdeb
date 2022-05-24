@@ -1,15 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"crypto/ed25519"
-	"encoding/hex"
 	"fmt"
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/config"
-	"github.com/mahmednabil109/gdeb/consensus"
 	"github.com/mahmednabil109/gdeb/data"
-	"github.com/yoseplee/vrf"
-	"log"
+	"os"
+	"strings"
 )
 
 var stakeDist map[string]float64
@@ -35,23 +34,47 @@ func setup() {
 	// data.LoadContracts("deployedContracts.json", &deployedContracts)
 }
 
-func main() {
-	setup()
+func generateOpcodes() {
+	f, _ := os.Open("ins.txt")
+	defer f.Close()
+	buffer := bufio.NewScanner(f)
 
+	w, _ := os.Create("generated_opcode.txt")
+	defer w.Close()
+	i := 1
+	for buffer.Scan() {
+
+		line := buffer.Text()
+
+		line = strings.TrimSpace(line)
+		lineArr := strings.Split(line, ":")
+
+		ins := lineArr[0][1 : len(lineArr[0])-1]
+		out := fmt.Sprintf(`%s OPCODE = 0x%02x`, ins, i)
+		i += 1
+		w.WriteString(out + "\n")
+
+	}
+
+}
+
+func main() {
+	//setup()
+	generateOpcodes()
 	// suggestion to set up communication/ pass channels between different modules
 	// cons := consensus.New(&communNetwCons)
 	// netw := network.New(&communNetwCons)
 
-	//code snippet to test ValidateLeader function
-	PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
-	PrivateKey, _ := hex.DecodeString("e70b0983a423db62605c527109306d67e16a69d2f4d6641183242e1eac462d27bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
-	nonce := 053464
-	proofBytes, _, err := vrf.Prove(PublicKey, PrivateKey, []byte(fmt.Sprint(nonce)))
-	if err != nil {
-		log.Println(err)
-	}
-
-	val := consensus.ValidateLeader(nonce, PublicKey, proofBytes, stakeDist)
-	log.Println(val)
+	////code snippet to test ValidateLeader function
+	//PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
+	//PrivateKey, _ := hex.DecodeString("e70b0983a423db62605c527109306d67e16a69d2f4d6641183242e1eac462d27bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
+	//nonce := 053464
+	//proofBytes, _, err := vrf.Prove(PublicKey, PrivateKey, []byte(fmt.Sprint(nonce)))
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//
+	//val := consensus.ValidateLeader(nonce, PublicKey, proofBytes, stakeDist)
+	//log.Println(val)
 
 }

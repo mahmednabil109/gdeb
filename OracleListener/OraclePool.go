@@ -15,7 +15,7 @@ type OraclePool struct {
 	mutex           sync.Mutex
 	SubscribeChan   chan *SubscribeMsg
 	UnsubscribeChan chan *UnsubscribeMsg
-	Subscribers     []*SubscribeMsg
+	Subscribers     map[int][]*SubscribeMsg
 }
 
 func NewOraclePool() *OraclePool {
@@ -25,12 +25,20 @@ func NewOraclePool() *OraclePool {
 		mutex:           sync.Mutex{},
 		SubscribeChan:   make(chan *SubscribeMsg),
 		UnsubscribeChan: make(chan *UnsubscribeMsg),
-		Subscribers:     make([]*SubscribeMsg, 0),
+		Subscribers:     make(map[int][]*SubscribeMsg, 0),
 	}
 	go pool.subscribeListener()
 	go pool.unsubscribeListener()
 
 	return pool
+}
+
+func (pool *OraclePool) Unsubscribe(msg *UnsubscribeMsg) {
+	pool.UnsubscribeChan <- msg
+}
+
+func (pool *OraclePool) Subscribe(msg *SubscribeMsg) {
+	pool.SubscribeChan <- msg
 }
 
 func (pool *OraclePool) unsubscribeListener() {
@@ -41,24 +49,17 @@ func (pool *OraclePool) unsubscribeListener() {
 		case msg := <-pool.UnsubscribeChan:
 			log.Println("Received unsubMsg from:", msg.VM)
 			vmId := msg.VM
-			i := 0
-			newSubscribers := make([]*SubscribeMsg, len(pool.Subscribers))
-			log.Println(pool.Connections)
-			for _, v := range pool.Subscribers {
-				log.Println("Oracle Key", v.Index)
-				safeConn := pool.Connections[v.OracleKey]
-				if v.VM == vmId {
-					safeConn.decCount()
-					if safeConn.Count == 0 {
-						safeConn.close()
-						pool.removeConnection(v.OracleKey)
-					}
-				} else {
-					newSubscribers[i] = v
-					i++
+
+			topics := pool.Subscribers[vmId]
+
+			for _, topic := range topics {
+				safeConn := pool.Connections[topic.Url]
+				safeConn.decCount()
+				if safeConn.Count == 0 {
+					safeConn.close()
 				}
 			}
-			pool.Subscribers = newSubscribers
+
 			log.Println("Current Connections:", pool.Connections)
 			for _, v := range pool.Connections {
 				log.Println(v.Count)
@@ -67,16 +68,16 @@ func (pool *OraclePool) unsubscribeListener() {
 	}
 }
 
+func (pool *OraclePool) unsubscribeVM(id int) {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+	delete(pool.Subscribers, id)
+}
+
 func (pool *OraclePool) addConnection(topic string, conn *SafeConnection) {
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	pool.Connections[topic] = conn
-}
-
-func (pool *OraclePool) removeConnection(topic string) {
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
-	delete(pool.Connections, topic)
 }
 
 func (pool *OraclePool) getConnection(oracleUrl, topic string) (*SafeConnection, error) {
@@ -96,7 +97,7 @@ func (pool *OraclePool) getConnection(oracleUrl, topic string) (*SafeConnection,
 	}
 
 	newConn := &SafeConnection{
-		Url:   topic,
+		Url:   oracleUrl,
 		conn:  connection,
 		Count: 1,
 		mutex: sync.Mutex{},
@@ -111,7 +112,7 @@ func (pool *OraclePool) getConnection(oracleUrl, topic string) (*SafeConnection,
 func (pool *OraclePool) messageReceiver(safeConn *SafeConnection) {
 	conn := safeConn.conn
 	for {
-		var res ResponseMsg
+		var res OracleMsg
 		err := conn.ReadJSON(&res)
 		if err != nil {
 			log.Println("Close: " + err.Error())
@@ -122,23 +123,38 @@ func (pool *OraclePool) messageReceiver(safeConn *SafeConnection) {
 	}
 }
 
-func (pool *OraclePool) broadcast(msg ResponseMsg) {
+func (pool *OraclePool) broadcast(msg OracleMsg) {
 	log.Println("Start Broadcast")
+
 	for _, v := range pool.Subscribers {
-		if isSubscriber := v.OracleKey == msg.Key; isSubscriber {
-			v.BroadcastChan <- &BroadcastMsg{
-				Key:       msg.Key,
-				Value:     msg.Value,
-				Timestamp: msg.Timestamp,
-				Index:     v.Index,
+		for _, subscribeMsg := range v {
+			if isSubscriber := subscribeMsg.OracleKey == msg.Key; isSubscriber {
+				subscribeMsg.BroadcastChan <- &BroadcastMsg{
+					Key:       msg.Key,
+					Value:     msg.Value,
+					Timestamp: msg.Timestamp,
+					Index:     subscribeMsg.Index,
+					Type:      subscribeMsg.KeyType,
+					Error:     msg.Error,
+				}
 			}
 		}
+
 	}
 }
 func (pool *OraclePool) addSubscriber(subMsg *SubscribeMsg) {
 	pool.mutex.Lock()
-	pool.Subscribers = append(pool.Subscribers, subMsg)
-	pool.mutex.Unlock()
+	defer pool.mutex.Unlock()
+
+	id := subMsg.VmId
+
+	if topics, isOk := pool.Subscribers[id]; isOk {
+		topics = append(topics, subMsg)
+	} else {
+		topics = make([]*SubscribeMsg, 0)
+		topics = append(topics, subMsg)
+		pool.Subscribers[id] = topics
+	}
 }
 
 func (pool *OraclePool) subscribeListener() {
@@ -148,10 +164,10 @@ func (pool *OraclePool) subscribeListener() {
 			pool.addSubscriber(sub)
 			safeConn, err := pool.getConnection(sub.Url, sub.OracleKey)
 			if err != nil {
-				sub.BroadcastChan <- &BroadcastMsg{Error: errors.New("no such oracle")}
+				sub.BroadcastChan <- &BroadcastMsg{Error: true}
 			}
 
-			err = safeConn.writeMsg(sub.OracleKey)
+			err = safeConn.writeMsg(sub.OracleKey) // sending message to oracle server
 
 			if err != nil {
 				log.Println(err)

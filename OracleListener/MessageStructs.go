@@ -4,25 +4,28 @@ type UnsubscribeMsg struct {
 	VM int
 }
 
-type ResponseMsg struct {
+type OracleMsg struct {
 	Key       string `json:"key"`
 	Value     string `json:"value"`
+	Type      int    `json:"type"`
 	Timestamp string `json:"timestamp"`
+	Error     bool   `json:"error"`
 }
 
 type BroadcastMsg struct {
 	Key       string `json:"key"`
 	Value     string `json:"value"`
-	Type      string `json:"type"`
+	Type      int    `json:"type"`
 	Timestamp string `json:"timestamp"`
 	Index     int
-	Error     error
+	Error     bool
 }
 
 type SubscribeMsg struct {
-	VM            int
+	VmId          int
 	Url           string
 	OracleKey     string
+	KeyType       int
 	Index         int
 	BroadcastChan chan *BroadcastMsg
 }
