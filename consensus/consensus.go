@@ -1,11 +1,12 @@
 package consensus
 
 import (
+	"github.com/mahmednabil109/gdeb/blockchain"
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/data"
 )
 
-// transaction pool (store transactions)
+// update stakeDist after each block for fast look-up
 
 type Consensus struct {
 	ChanNetBlock        <-chan data.Block
@@ -13,15 +14,17 @@ type Consensus struct {
 	ChanConsBlock       chan<- data.Block
 	ChanConsTransaction chan<- data.Transaction
 	stakeDist           map[string]float64
+	blockchain          blockchain.Blockchain
+	transPool           blockchain.TransPool
 }
 
 func New(c *communication.CommunNetwCons, stakeDist map[string]float64) *Consensus {
-	return &Consensus{
-		ChanNetBlock:        c.ChanNetBlock,
-		ChanNetTransaction:  c.ChanNetTransaction,
+	return &Consensus{ChanNetBlock: c.ChanNetBlock, ChanNetTransaction: c.ChanNetTransaction,
 		ChanConsBlock:       c.ChanConsBlock,
 		ChanConsTransaction: c.ChanConsTransaction,
 		stakeDist:           stakeDist,
+		blockchain:          blockchain.NewBlockchain(),
+		transPool:           blockchain.NewTransPool(),
 	}
 }
 
@@ -32,15 +35,18 @@ func (c *Consensus) Init() error {
 			select {
 			case b := <-c.ChanNetBlock:
 				go func() {
-					//handle block
-					ValidateBlock(&b, c.stakeDist)
-					//validate if leader correct, yes -> blockchain
+					//validate block & append if valid (leader and fields correct)
+					if ValidateBlock(&b, c.stakeDist) {
+						c.blockchain.Add(b)
+					}
 				}()
-				//case t := <-c.ChanNetTransaction:
-				//	go func() {
-				//		//handle transaction
-				//		//validate trans -> put in pool
-				//	}()
+			case t := <-c.ChanNetTransaction:
+				go func() {
+					//validate transaction & append if valid (fields & money in blockchain)
+					if t.Validate() {
+						c.transPool.Add(t.Signature, t)
+					}
+				}()
 			}
 		}
 	}()

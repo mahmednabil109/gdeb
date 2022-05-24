@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/gob"
 	"os"
 	"sync"
 	"time"
@@ -8,8 +9,8 @@ import (
 	"github.com/mahmednabil109/gdeb/data"
 )
 
+// handle fork (appropriate data structure)
 type Blockchain struct {
-	// !handle fork ?? correct data structure?
 	chain []data.Block
 	mux   sync.Mutex
 }
@@ -20,30 +21,38 @@ type Blockchain struct {
 		           \ [slot 6] <= [slot 7] <= [slot 8]
 */
 
+func NewBlockchain() Blockchain {
+	return Blockchain{
+		chain: make([]data.Block, 0),
+	}
+}
+
 var (
-	BLOCKCHAIN_PATH string = './.blockchain'
-	SAVE_FREQ time.Duration = 800 * time.Millisecond
+	BLOCKCHAIN_PATH string        = "./.blockchain"
+	SAVE_FREQ       time.Duration = 800 * time.Millisecond
 )
 
 // write to disk (goroutine)
 func (bc *Blockchain) Init() {
 	bc.chain = []data.Block{}
 
-	// read the blockchain  from disk if it exists
-	if os.IsExist(BLOCKCHAIN_PATH) {
-		go func(){
-			bc.mux.Lock()
-			defer bc.mux.Unlock()
-
-			err := readGob(BLOCKCHAIN_PATH, bc.chain)
-		}()
+	if _, err := os.Stat(BLOCKCHAIN_PATH); err != nil {
+		if os.IsNotExist(err) {
+			// file does not exist
+		} else {
+			go func() {
+				bc.mux.Lock()
+				defer bc.mux.Unlock()
+				// err := readGob(BLOCKCHAIN_PATH, bc.chain)
+			}()
+		}
 	}
 
 	go func() {
 		ticker := time.NewTicker(SAVE_FREQ)
 		for {
 			select {
-			case <-ticker:
+			case <-ticker.C:
 				// serialize the blockchain in the fs
 
 				// to minimize the time we hold the mutex
@@ -77,7 +86,6 @@ func (bc *Blockchain) GetBlockchain() []data.Block {
 	return chain_copy
 }
 
-
 // serialization utils
 
 func writeGob(filePath string, object interface{}) error {
@@ -91,7 +99,7 @@ func writeGob(filePath string, object interface{}) error {
 	return err
 }
 
-func readGob(filgePath string, object interface{}) error {
+func readGob(filePath string, object interface{}) error {
 	file, err := os.Open(filePath)
 	if err == nil {
 		decoder := gob.NewDecoder(file)

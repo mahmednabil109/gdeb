@@ -33,11 +33,11 @@ import (
 
 func ValidateBlock(b *data.Block, stakeDist map[string]float64) bool {
 
-	// update stakeDist in some variable
 	ValidateLeader(b.Nonce, b.SlotLeader, b.VrfProof, stakeDist)
 
 	for _, trans := range b.Transactions {
 		//note: transaction could have been invalidated after previous block added it
+		//we need to check if enough money exists (infering blokchain, but continously changing stakeDist for fast access)
 		if !trans.Validate() {
 			return false
 		}
