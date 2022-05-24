@@ -7,21 +7,28 @@ import (
 )
 
 type GlobalData struct {
-	Id           int
-	ContractCode []byte
-	OraclePool   OracleConnection.OraclePool
-	receiveChan  chan *OracleConnection.BroadcastMsg
 }
 
 type Interpreter struct {
+	Id               int
 	state            *State
-	globalData       *GlobalData
+	ContractCode     []byte
+	OraclePool       *OracleConnection.OraclePool
+	ReceiveChan      chan *OracleConnection.BroadcastMsg
 	operationMapping *OperationMapping
 	gasLimit         uint64
 }
 
-func newInterpreter(code *GlobalData, gasLimit uint64) *Interpreter {
-	return &Interpreter{state: newVM(), globalData: code, operationMapping: newInstructionInfo(), gasLimit: gasLimit}
+func newInterpreter(id int, contractCode []byte, pool *OracleConnection.OraclePool, gasLimit uint64) *Interpreter {
+	return &Interpreter{
+		Id:               id,
+		state:            newVM(),
+		ContractCode:     contractCode,
+		OraclePool:       pool,
+		ReceiveChan:      make(chan *OracleConnection.BroadcastMsg),
+		operationMapping: newInstructionInfo(),
+		gasLimit:         gasLimit,
+	}
 }
 
 // TODO when error happens --> unsubscribe from the oraclePool
@@ -36,7 +43,7 @@ func (interpreter *Interpreter) execute() error {
 			return errors.New("out of gas error")
 		}
 
-		curInstruction := (interpreter.globalData.ContractCode)[*pc]
+		curInstruction := (interpreter.ContractCode)[*pc]
 		operationInfo := interpreter.operationMapping.getInstruction(curInstruction)
 
 		if interpreter.state.Frame.Stack.Size() < operationInfo.stackArgsCount {
@@ -44,7 +51,7 @@ func (interpreter *Interpreter) execute() error {
 			return errors.New("stack underflow error")
 		}
 
-		err := operationInfo.execute(interpreter.state, interpreter.globalData)
+		err := operationInfo.execute(interpreter)
 		if err != nil {
 			return err
 		}
@@ -54,7 +61,7 @@ func (interpreter *Interpreter) execute() error {
 		*pc += operationInfo.pcJump
 
 		fmt.Println(interpreter.state.toString())
-		if int(*pc) >= len(interpreter.globalData.ContractCode) {
+		if int(*pc) >= len(interpreter.ContractCode) {
 			return errors.New("cannot reach the globalData")
 		}
 	}

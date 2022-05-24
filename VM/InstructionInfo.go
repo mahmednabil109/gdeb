@@ -72,30 +72,12 @@ func newInstructionInfo() *OperationMapping {
 		gasPrice:       lowGasPrice,
 		pcJump:         onePCJump,
 	}
-	(*oppArray)[PUSH] = Operation{
-		execute:        PushOp,
-		stackArgsCount: 0,
-		gasPrice:       lowGasPrice,
-		pcJump:         33,
-	}
+
 	(*oppArray)[POP] = Operation{
 		execute:        PopOp,
 		stackArgsCount: 0,
 		gasPrice:       lowGasPrice,
 		pcJump:         1,
-	}
-
-	(*oppArray)[MSTORE] = Operation{
-		execute:        MStoreOp,
-		stackArgsCount: 2,
-		gasPrice:       midGasPrice,
-		pcJump:         1,
-	}
-	(*oppArray)[MLOAD] = Operation{
-		execute:        MLoadOp,
-		stackArgsCount: 1,
-		gasPrice:       midGasPrice,
-		pcJump:         onePCJump,
 	}
 	(*oppArray)[JUMP] = Operation{
 		execute:        JumpOp,
