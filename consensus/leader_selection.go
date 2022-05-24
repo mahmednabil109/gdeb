@@ -1,9 +1,7 @@
 package consensus
 
 import (
-	"crypto/ed25519"
 	"encoding/hex"
-	"fmt"
 	"github.com/yoseplee/vrf"
 	"log"
 	"math/big"
@@ -14,8 +12,10 @@ const threshConst = 0.02
 
 // quick validation for supposed mined block that node received from network
 // determines whether network will broadcast this block further or not
-func ValidateLeader(nonce int, pub ed25519.PublicKey, proof []byte, stakeDist map[string]float64) bool {
-	valid, _ := vrf.Verify(pub, proof, []byte(fmt.Sprint(nonce)))
+func ValidateLeader(nonce string, public string, vrfProof string, stakeDist map[string]float64) bool {
+	proof, _ := hex.DecodeString(vrfProof)
+	pub, _ := hex.DecodeString(public)
+	valid, _ := vrf.Verify(pub, proof, []byte(nonce))
 	if !valid {
 		log.Printf("Proof of user %s is invalid!\n", hex.EncodeToString(pub))
 		return false
