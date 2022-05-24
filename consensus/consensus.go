@@ -21,7 +21,7 @@ func New(c *communication.CommunNetwCons, stakeDist map[string]float64) *Consens
 		ChanNetTransaction:  c.ChanNetTransaction,
 		ChanConsBlock:       c.ChanConsBlock,
 		ChanConsTransaction: c.ChanConsTransaction,
-		stakeDist:           c.stakstakeDist,
+		stakeDist:           stakeDist,
 	}
 }
 
@@ -33,15 +33,16 @@ func (c *Consensus) Init() error {
 			case b := <-c.ChanNetBlock:
 				go func() {
 					//handle block
-					ValidateBlock(b)
+					ValidateBlock(&b, c.stakeDist)
 					//validate if leader correct, yes -> blockchain
 				}()
-			case t := <-c.ChanNetTransaction:
-				go func() {
-					//handle transaction
-					//validate trans -> put in pool
-				}()
+				//case t := <-c.ChanNetTransaction:
+				//	go func() {
+				//		//handle transaction
+				//		//validate trans -> put in pool
+				//	}()
 			}
 		}
 	}()
+	return nil
 }

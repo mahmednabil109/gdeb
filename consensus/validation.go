@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 
 	"github.com/mahmednabil109/gdeb/data"
+	"strconv"
 )
 
 // type Block struct {
@@ -33,12 +34,13 @@ import (
 // 	Signature       string
 // }
 
-func ValidateBlock(b *data.Block) bool {
+func ValidateBlock(b *data.Block, stakeDist map[string]float64) bool {
 	pub, _ := hex.DecodeString(b.SlotLeader)
 	proof := []byte(b.VrfProof)
 
 	// update stakeDist in some variable
-	ValidateLeader(b.Nonce, pub, proof, stakeDist)
+	nonce, _ := strconv.Atoi(b.Nonce)
+	ValidateLeader(nonce, pub, proof, stakeDist)
 
 	for _, trans := range b.Transactions {
 		//note: transaction could have been invalidated after previous block added it
