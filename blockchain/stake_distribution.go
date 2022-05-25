@@ -30,6 +30,21 @@ func (sd *StakeDistribution) Get(key string) float64 {
 	return -1
 
 }
+func (sd *StakeDistribution) Valid(trans data.Transaction) (bool, error) {
+	sd.Mux.Lock()
+	defer sd.Mux.Unlock()
+
+	amount, from := float64(trans.Amount), trans.From
+
+	val, ok := sd.Distribution[from]
+	if !ok {
+		return false, fmt.Errorf("Not enough money!")
+	} else if val >= amount {
+		return false, fmt.Errorf("Sender %s does not have enough money of amount %f", from, amount)
+	}
+	return true, nil
+}
+
 func (sd *StakeDistribution) Update(trans data.Transaction) error {
 	sd.Mux.Lock()
 	defer sd.Mux.Unlock()
