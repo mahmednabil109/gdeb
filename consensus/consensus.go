@@ -34,6 +34,8 @@ func (c *Consensus) enoughMoney(t data.Transaction) bool {
 }
 func (c *Consensus) appendBlockchain(b data.Block) {
 	c.blockchain.Add(b)
+	//remove all transactions contained in the block that got appended
+	c.transPool.Update(b.Transactions)
 }
 func (c *Consensus) updateStakedist(t data.Transaction) {
 	c.stakeDist.Update(t)
@@ -75,7 +77,7 @@ func (c *Consensus) Init() error {
 				go func() {
 					//validate transaction & append if valid (fields & money in blockchain)
 					if t.Validate() && c.enoughMoney(t) {
-						c.transPool.Add(t.Signature, t)
+						c.transPool.Add(t)
 						c.stakeDist.Update(t)
 					}
 				}()

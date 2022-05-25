@@ -17,14 +17,23 @@ func NewTransPool() *TransPool {
 	}
 }
 
-func (tp *TransPool) Add(val string, trans data.Transaction) {
+func (tp *TransPool) Add(t data.Transaction) {
+	val := t.Signature
 	tp.mux.Lock()
 	defer tp.mux.Unlock()
-	tp.pool[val] = trans
+	tp.pool[val] = t
 }
 
 func (tp *TransPool) Remove(val string) {
 	tp.mux.Lock()
 	defer tp.mux.Unlock()
 	delete(tp.pool, val)
+}
+
+func (tp *TransPool) Update(trans []data.Transaction) {
+	tp.mux.Lock()
+	defer tp.mux.Unlock()
+	for _, t := range trans {
+		delete(tp.pool, t.Signature)
+	}
 }
