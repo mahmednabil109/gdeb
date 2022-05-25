@@ -14,17 +14,22 @@ import (
 	"github.com/yoseplee/vrf"
 )
 
-var stakeDist blockchain.StakeDistribution
-var deployedContracts []string
-var privateKey ed25519.PrivateKey
-var communNetwCons communication.CommunNetwCons
+var (
+	totalCoins        uint64
+	stakeDist         blockchain.StakeDistribution
+	deployedContracts []string
+	privateKey        ed25519.PrivateKey
+	communNetwCons    communication.CommunNetwCons
+)
 
 func setup() {
 	config := config.New()
 	pk := config.NodeKey()
 	privateKey = pk
 
-	data.LoadStakeDist("stakeDistribution.json", &stakeDist.Distribution)
+	dist := make(map[string]float64)
+	data.LoadStakeDist("stakeDistribution.json", &dist)
+	stakeDist = blockchain.NewStakeDist(totalCoins, dist)
 
 	communNetwCons = communication.CommunNetwCons{
 		ChanNetBlock:        make(chan data.Block),
