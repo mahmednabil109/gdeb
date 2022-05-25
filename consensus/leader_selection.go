@@ -2,9 +2,11 @@ package consensus
 
 import (
 	"encoding/hex"
-	"github.com/yoseplee/vrf"
 	"log"
 	"math/big"
+
+	"github.com/mahmednabil109/gdeb/blockchain"
+	"github.com/yoseplee/vrf"
 )
 
 //optimal threshold calculation constant, acceptable placeholder until simulation is finished
@@ -12,7 +14,7 @@ const threshConst = 0.02
 
 // quick validation for supposed mined block that node received from network
 // determines whether network will broadcast this block further or not
-func ValidateLeader(nonce string, public string, vrfProof string, stakeDist map[string]float64) bool {
+func ValidateLeader(nonce string, public string, vrfProof string, stakeDist *blockchain.StakeDistribution) bool {
 	proof, _ := hex.DecodeString(vrfProof)
 	pub, _ := hex.DecodeString(public)
 	valid, _ := vrf.Verify(pub, proof, []byte(nonce))
@@ -21,8 +23,8 @@ func ValidateLeader(nonce string, public string, vrfProof string, stakeDist map[
 		return false
 	}
 
-	stake := stakeDist[hex.EncodeToString(pub)]
-	if stake == 0 {
+	stake := stakeDist.Get(hex.EncodeToString(pub))
+	if stake <= 0 {
 		return false
 	}
 

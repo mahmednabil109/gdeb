@@ -13,12 +13,12 @@ type Consensus struct {
 	ChanNetTransaction  <-chan data.Transaction
 	ChanConsBlock       chan<- data.Block
 	ChanConsTransaction chan<- data.Transaction
-	stakeDist           map[string]float64
-	blockchain          blockchain.Blockchain
-	transPool           blockchain.TransPool
+	stakeDist           *blockchain.StakeDistribution
+	blockchain          *blockchain.Blockchain
+	transPool           *blockchain.TransPool
 }
 
-func New(c *communication.CommunNetwCons, stakeDist map[string]float64) *Consensus {
+func New(c *communication.CommunNetwCons, stakeDist *blockchain.StakeDistribution) *Consensus {
 	return &Consensus{ChanNetBlock: c.ChanNetBlock, ChanNetTransaction: c.ChanNetTransaction,
 		ChanConsBlock:       c.ChanConsBlock,
 		ChanConsTransaction: c.ChanConsTransaction,
@@ -45,6 +45,7 @@ func (c *Consensus) Init() error {
 					//validate transaction & append if valid (fields & money in blockchain)
 					if t.Validate() {
 						c.transPool.Add(t.Signature, t)
+						c.stakeDist.Update(t)
 					}
 				}()
 			}

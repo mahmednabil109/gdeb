@@ -11,8 +11,8 @@ type TransPool struct {
 	mux  sync.Mutex
 }
 
-func NewTransPool() TransPool {
-	return TransPool{
+func NewTransPool() *TransPool {
+	return &TransPool{
 		pool: make(map[string]data.Transaction),
 	}
 }

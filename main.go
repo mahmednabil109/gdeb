@@ -4,15 +4,17 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"log"
+
+	"github.com/mahmednabil109/gdeb/blockchain"
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/config"
 	"github.com/mahmednabil109/gdeb/consensus"
 	"github.com/mahmednabil109/gdeb/data"
 	"github.com/yoseplee/vrf"
-	"log"
 )
 
-var stakeDist map[string]float64
+var stakeDist blockchain.StakeDistribution
 var deployedContracts []string
 var privateKey ed25519.PrivateKey
 var communNetwCons communication.CommunNetwCons
@@ -22,7 +24,7 @@ func setup() {
 	pk := config.NodeKey()
 	privateKey = pk
 
-	data.LoadStakeDist("stakeDistribution.json", &stakeDist)
+	data.LoadStakeDist("stakeDistribution.json", &stakeDist.Distribution)
 
 	communNetwCons = communication.CommunNetwCons{
 		ChanNetBlock:        make(chan data.Block),
@@ -39,7 +41,7 @@ func main() {
 	setup()
 
 	// suggestion to set up communication/ pass channels between different modules
-	// cons := consensus.New(&communNetwCons)
+	// cons := consensus.New(&communNetwCons, &stakeDist)
 	// netw := network.New(&communNetwCons)
 
 	//code snippet to test ValidateLeader function
@@ -52,7 +54,7 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
-	val := consensus.ValidateLeader(nonce, pub, proof, stakeDist)
+	val := consensus.ValidateLeader(nonce, pub, proof, &stakeDist)
 	log.Println(val)
 
 }

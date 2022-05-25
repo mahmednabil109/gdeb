@@ -21,8 +21,8 @@ type Blockchain struct {
 		           \ [slot 6] <= [slot 7] <= [slot 8]
 */
 
-func NewBlockchain() Blockchain {
-	return Blockchain{
+func NewBlockchain() *Blockchain {
+	return &Blockchain{
 		chain: make([]data.Block, 0),
 	}
 }

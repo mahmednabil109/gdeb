@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"github.com/mahmednabil109/gdeb/blockchain"
 	"github.com/mahmednabil109/gdeb/data"
 )
 
@@ -31,7 +32,7 @@ import (
 // 	Signature       string
 // }
 
-func ValidateBlock(b *data.Block, stakeDist map[string]float64) bool {
+func ValidateBlock(b *data.Block, stakeDist *blockchain.StakeDistribution) bool {
 
 	ValidateLeader(b.Nonce, b.SlotLeader, b.VrfProof, stakeDist)
 
