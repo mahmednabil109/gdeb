@@ -15,8 +15,6 @@ const (
 	Time    Datatype = 5
 )
 
-const ()
-
 type DataWord struct {
 	Data     ExtraBigInt
 	Datatype Datatype
@@ -35,9 +33,10 @@ func (x DataWord) ToString() string {
 	} else if x.Datatype == String {
 		return string(x.Data.toByteArray())
 	}
-
-	t := time.Date(int(d[0]), time.Month(int(d[1])), int(d[2]), int(d[3]), int(d[4]), int(d[5]), 0, time.UTC)
-	return t.GoString()
+	dataToByte := d.toByteArray()
+	var year = uint16(dataToByte[1])<<8 + uint16(dataToByte[0])
+	t := time.Date(int(year), time.Month(int(d[2])), int(d[3]), int(d[4]), int(d[5]), int(d[6]), 0, time.UTC)
+	return t.String()
 }
 
 func NewData(datatype Datatype) *DataWord {
@@ -53,7 +52,7 @@ func NewData(datatype Datatype) *DataWord {
 	case Int256:
 		size = 8
 	case Time:
-		size = 6
+		size = 2
 	default:
 		size = 1
 	}

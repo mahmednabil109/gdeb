@@ -6,7 +6,7 @@ type UnsubscribeMsg struct {
 
 type OracleMsg struct {
 	Key       string `json:"key"`
-	Value     string `json:"value"`
+	Value     []byte `json:"value"`
 	Type      int    `json:"type"`
 	Timestamp string `json:"timestamp"`
 	Error     bool   `json:"error"`
@@ -14,7 +14,7 @@ type OracleMsg struct {
 
 type BroadcastMsg struct {
 	Key       string `json:"key"`
-	Value     string `json:"value"`
+	Value     []byte `json:"value"`
 	Type      int    `json:"type"`
 	Timestamp string `json:"timestamp"`
 	Index     int

@@ -21,7 +21,7 @@ const (
 
 type JumpTable [100]Operation
 
-func newInstructionInfo() *JumpTable {
+func newJumpTable() *JumpTable {
 	var oppArray = new(JumpTable)
 	(*oppArray)[ADD] =
 		Operation{
@@ -118,7 +118,7 @@ func newInstructionInfo() *JumpTable {
 		execute:        PushOp,
 		stackArgsCount: 0,
 		gasPrice:       lowGasPrice,
-		codeArgsCount:  6,
+		codeArgsCount:  7,
 		pcJump:         0,
 	}
 	(*oppArray)[PUSH64] = Operation{

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/ed25519"
 	"fmt"
+	"github.com/mahmednabil109/gdeb/VM/DataTypes"
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/config"
 	"github.com/mahmednabil109/gdeb/data"
@@ -58,12 +59,50 @@ func generateOpcodes() {
 
 }
 
+func toBinary32(x uint32) string {
+	result := ""
+	for bit := 0; bit < 32; bit++ {
+
+		if x&(1<<bit) == 0 {
+			result = "0" + result
+		} else {
+			result = "1" + result
+		}
+	}
+	return result
+}
+func toBinary64(x uint64) string {
+	result := ""
+	for bit := 0; bit < 32; bit++ {
+
+		if x&(1<<bit) == 0 {
+			result = "0" + result
+		} else {
+			result = "1" + result
+		}
+	}
+	return result
+}
 func main() {
 	//setup()
-	generateOpcodes()
-	// suggestion to set up communication/ pass channels between different modules
+	//generateOpcodes()
 	// cons := consensus.New(&communNetwCons)
 	// netw := network.New(&communNetwCons)
+
+	d1 := DataTypes.NewData(DataTypes.Int64)
+	d1.Data[1] = 1 << 31
+	d2 := DataTypes.NewData(DataTypes.Int64)
+	d2.Data[1] = 1 << 30
+	fmt.Println(d1.Data.ToBinary(), d2.Data.ToBinary())
+
+	fmt.Println(d2.Data.Sub(d1.Data).ToBinary())
+
+	var a uint32 = 1<<32 - 1
+
+	var b uint32 = 1<<32 - 1
+	fmt.Println(toBinary32(a))
+	fmt.Println(toBinary32(b))
+	fmt.Println(toBinary32(b + a))
 
 	////code snippet to test ValidateLeader function
 	//PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")

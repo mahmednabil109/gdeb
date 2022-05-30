@@ -41,6 +41,11 @@ func (pool *OraclePool) Subscribe(msg *SubscribeMsg) {
 	pool.SubscribeChan <- msg
 }
 
+func (pool *OraclePool) IsSubscribed(id int) bool {
+	_, isOk := pool.Subscribers[id]
+	return isOk
+}
+
 func (pool *OraclePool) unsubscribeListener() {
 	log.Println("Initiated unsub listener!!")
 	defer log.Println("Exit Listener")

@@ -6,16 +6,14 @@ import (
 	"strconv"
 )
 
-const size = 8
-
 type ExtraBigInt []uint32
 
-func NewDataWord(size int) ExtraBigInt {
+func NewExtraBigInt(size int) ExtraBigInt {
 	return make([]uint32, size)
 }
 
 func arrayToDataWord(array []uint32) ExtraBigInt {
-	result := NewDataWord(len(array))
+	result := NewExtraBigInt(len(array))
 
 	for i, v := range array {
 		result[i] = v
@@ -23,16 +21,23 @@ func arrayToDataWord(array []uint32) ExtraBigInt {
 	return result
 }
 
+func ByteArrToBigInt(arr []byte) ExtraBigInt {
+	bigInt := ExtraBigInt{}
+	bigInt.SetDataWord(arr)
+	return bigInt
+}
+
 func (x ExtraBigInt) SetDataWord(byteArr []byte) {
-	for i, j := 0, 0; i < size; i++ {
-		for lShift := 0; lShift < 4; lShift, j = lShift+1, j+1 {
-			x[i] = x[i] | (uint32(byteArr[j]) << (uint32(lShift) * 8))
+	for i, j := 0, 0; i < len(byteArr); i = i + 1 {
+		x[j] = x[j] | (uint32(byteArr[i]) << ((i % 4) * 8))
+		if i%4 == 3 {
+			j++
 		}
 	}
 }
 
-func intToByte(integer uint32) []uint8 {
-	result := make([]uint8, 4)
+func intToByte(integer uint32) []byte {
+	result := make([]byte, 4)
 
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 8; j++ {
@@ -45,9 +50,9 @@ func intToByte(integer uint32) []uint8 {
 	return result
 }
 
-func (x ExtraBigInt) toByteArray() []uint8 {
+func (x ExtraBigInt) toByteArray() []byte {
 
-	result := make([]uint8, 1)
+	result := make([]byte, 1)
 
 	for i := 0; i < len(x); i++ {
 		result = append(result, intToByte(x[i])...)
@@ -79,7 +84,7 @@ func (x ExtraBigInt) toStringHex() string {
 	return fmt.Sprintf("%x", xInHex)
 }
 
-func (x ExtraBigInt) toInt32() uint32 {
+func (x ExtraBigInt) ToInt32() uint32 {
 	return x[0]
 }
 
@@ -98,25 +103,27 @@ func (x ExtraBigInt) SetUint32(a uint32, i uint) {
 
 func (x ExtraBigInt) Add(y ExtraBigInt) ExtraBigInt {
 	var carry uint32 = 0
-	result := NewDataWord(len(x))
+	result := NewExtraBigInt(len(x))
 	for i := 0; i < len(result); i++ {
 		(result)[i], carry = bits.Add32(x[i], y[i], carry)
 	}
+
 	return result
 }
 
 func (x ExtraBigInt) Sub(y ExtraBigInt) ExtraBigInt {
 	var borrow uint32 = 0
-	result := NewDataWord(len(x))
+	result := NewExtraBigInt(len(x))
 	for i := 0; i < len(result); i++ {
-		(result)[i], borrow = bits.Sub32(x[i], y[i], borrow)
+		result[i], borrow = bits.Sub32(x[i], y[i], borrow)
 	}
 	return result
 }
 
 func (x ExtraBigInt) Multiply(y ExtraBigInt) (ExtraBigInt, bool) {
 	result := mul(x, y)
-	ans := result[:size]
+	size := len(x)
+	ans := result[:len(x)]
 
 	var isOverFlow = false
 	for i := size; i < size*2; i++ {
@@ -126,8 +133,8 @@ func (x ExtraBigInt) Multiply(y ExtraBigInt) (ExtraBigInt, bool) {
 	return arrayToDataWord(ans), isOverFlow
 }
 
-func mul(x, y ExtraBigInt) (result [size * 2]uint32) {
-
+func mul(x, y ExtraBigInt) []uint32 {
+	result := make([]uint32, len(x)*2)
 	for Yi := 0; Yi < len(y); Yi++ {
 		var carry uint32 = 0
 		Ri := Yi
@@ -139,7 +146,7 @@ func mul(x, y ExtraBigInt) (result [size * 2]uint32) {
 		}
 		result[Ri+Xi] = carry
 	}
-	return
+	return result
 }
 
 func multiplyHelper(z, x, y, carry uint32) (hi, lo uint32) {
@@ -219,7 +226,7 @@ func normalize(u, y ExtraBigInt) ([]uint32, []uint32) {
 	}
 	shift := bits.LeadingZeros32(y[yLen-1])
 	fmt.Println(shift)
-	var ynStorage = NewDataWord(len(u))
+	var ynStorage = NewExtraBigInt(len(u))
 	yn := ynStorage[:yLen]
 
 	for i := yLen - 1; i > 0; i-- {
@@ -263,7 +270,7 @@ func (x ExtraBigInt) GT(y ExtraBigInt) bool {
 }
 
 func (x ExtraBigInt) LT(y ExtraBigInt) bool {
-	return !x.GT(y)
+	return !x.GT(y) && !x.Eq(y)
 }
 
 func (x ExtraBigInt) SLT(y ExtraBigInt) bool {
@@ -326,7 +333,7 @@ func (x ExtraBigInt) IsZero() bool {
 }
 
 func (x ExtraBigInt) And(y ExtraBigInt) ExtraBigInt {
-	result := NewDataWord(len(x))
+	result := NewExtraBigInt(len(x))
 	for i := 0; i < len(x); i++ {
 		(result)[i] = x[i] & y[i]
 	}
@@ -334,7 +341,7 @@ func (x ExtraBigInt) And(y ExtraBigInt) ExtraBigInt {
 }
 
 func (x ExtraBigInt) Or(y ExtraBigInt) ExtraBigInt {
-	result := NewDataWord(len(x))
+	result := NewExtraBigInt(len(x))
 	for i := 0; i < len(x); i++ {
 		(result)[i] = x[i] | y[i]
 	}
@@ -342,7 +349,7 @@ func (x ExtraBigInt) Or(y ExtraBigInt) ExtraBigInt {
 }
 
 func (x ExtraBigInt) Not() (result ExtraBigInt) {
-
+	result = NewExtraBigInt(len(x))
 	for i := 0; i < len(x); i++ {
 		(result)[i] = ^x[i]
 	}
@@ -350,7 +357,7 @@ func (x ExtraBigInt) Not() (result ExtraBigInt) {
 }
 
 func (x ExtraBigInt) Xor(y ExtraBigInt) ExtraBigInt {
-	result := NewDataWord(len(x))
+	result := NewExtraBigInt(len(x))
 	for i := 0; i < len(x); i++ {
 		(result)[i] = x[i] ^ y[i]
 	}
