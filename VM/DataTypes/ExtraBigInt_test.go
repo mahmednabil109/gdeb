@@ -1,4 +1,4 @@
-package VM
+package DataTypes
 
 import (
 	"math/big"

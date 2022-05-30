@@ -1,4 +1,4 @@
-package VM
+package DataTypes
 
 import (
 	"fmt"
@@ -8,14 +8,14 @@ import (
 
 const size = 8
 
-type DataWord []uint32
+type ExtraBigInt []uint32
 
-func NewDataWord() DataWord {
-	return DataWord{0, 0, 0, 0, 0, 0, 0, 0}
+func NewDataWord(size int) ExtraBigInt {
+	return make([]uint32, size)
 }
 
-func arrayToDataWord(array []uint32) DataWord {
-	result := NewDataWord()
+func arrayToDataWord(array []uint32) ExtraBigInt {
+	result := NewDataWord(len(array))
 
 	for i, v := range array {
 		result[i] = v
@@ -23,7 +23,7 @@ func arrayToDataWord(array []uint32) DataWord {
 	return result
 }
 
-func (x DataWord) SetDataWord(byteArr []byte) {
+func (x ExtraBigInt) SetDataWord(byteArr []byte) {
 	for i, j := 0, 0; i < size; i++ {
 		for lShift := 0; lShift < 4; lShift, j = lShift+1, j+1 {
 			x[i] = x[i] | (uint32(byteArr[j]) << (uint32(lShift) * 8))
@@ -45,7 +45,7 @@ func intToByte(integer uint32) []uint8 {
 	return result
 }
 
-func (x DataWord) toByteArray() []uint8 {
+func (x ExtraBigInt) toByteArray() []uint8 {
 
 	result := make([]uint8, 1)
 
@@ -55,10 +55,10 @@ func (x DataWord) toByteArray() []uint8 {
 	return result
 }
 
-func (x DataWord) toString() string {
+func (x ExtraBigInt) toString() string {
 	return string(x.toByteArray())
 }
-func (x DataWord) ToBinary() string {
+func (x ExtraBigInt) ToBinary() string {
 	result := ""
 	for word := 0; word < len(x); word++ {
 		for bit := 0; bit < 32; bit++ {
@@ -73,17 +73,17 @@ func (x DataWord) ToBinary() string {
 	return result
 }
 
-func (x DataWord) toStringHex() string {
+func (x ExtraBigInt) toStringHex() string {
 	newX := x.ToBinary()
 	xInHex, _ := strconv.ParseInt(newX, 2, 64)
 	return fmt.Sprintf("%x", xInHex)
 }
 
-func (x DataWord) toInt32() uint32 {
+func (x ExtraBigInt) toInt32() uint32 {
 	return x[0]
 }
 
-func (x DataWord) toDecimal() string {
+func (x ExtraBigInt) toDecimal() string {
 	binary := x.ToBinary()
 	result := ""
 	for i := 0; i < len(binary); i++ {
@@ -92,29 +92,29 @@ func (x DataWord) toDecimal() string {
 	return result
 }
 
-func (x DataWord) SetUint32(a uint32, i uint) {
+func (x ExtraBigInt) SetUint32(a uint32, i uint) {
 	x[i] = a
 }
 
-func (x DataWord) Add(y DataWord) DataWord {
+func (x ExtraBigInt) Add(y ExtraBigInt) ExtraBigInt {
 	var carry uint32 = 0
-	result := NewDataWord()
+	result := NewDataWord(len(x))
 	for i := 0; i < len(result); i++ {
 		(result)[i], carry = bits.Add32(x[i], y[i], carry)
 	}
 	return result
 }
 
-func (x DataWord) Sub(y DataWord) DataWord {
+func (x ExtraBigInt) Sub(y ExtraBigInt) ExtraBigInt {
 	var borrow uint32 = 0
-	result := NewDataWord()
+	result := NewDataWord(len(x))
 	for i := 0; i < len(result); i++ {
 		(result)[i], borrow = bits.Sub32(x[i], y[i], borrow)
 	}
 	return result
 }
 
-func (x DataWord) Multiply(y DataWord) (DataWord, bool) {
+func (x ExtraBigInt) Multiply(y ExtraBigInt) (ExtraBigInt, bool) {
 	result := mul(x, y)
 	ans := result[:size]
 
@@ -126,7 +126,7 @@ func (x DataWord) Multiply(y DataWord) (DataWord, bool) {
 	return arrayToDataWord(ans), isOverFlow
 }
 
-func mul(x, y DataWord) (result [size * 2]uint32) {
+func mul(x, y ExtraBigInt) (result [size * 2]uint32) {
 
 	for Yi := 0; Yi < len(y); Yi++ {
 		var carry uint32 = 0
@@ -177,7 +177,7 @@ func udivrem2by1(uh, ul, d, reciprocal uint32) (quot, rem uint32) {
 	return qh, r
 }
 
-func (x DataWord) Div(y DataWord) []uint32 {
+func (x ExtraBigInt) Div(y ExtraBigInt) []uint32 {
 
 	//b := 1 << 32
 	u, v := normalize(x, y)
@@ -208,7 +208,7 @@ func (x DataWord) Div(y DataWord) []uint32 {
 	return q
 }
 
-func normalize(u, y DataWord) ([]uint32, []uint32) {
+func normalize(u, y ExtraBigInt) ([]uint32, []uint32) {
 
 	var yLen int
 	for i := len(y) - 1; i >= 0; i-- {
@@ -219,7 +219,7 @@ func normalize(u, y DataWord) ([]uint32, []uint32) {
 	}
 	shift := bits.LeadingZeros32(y[yLen-1])
 	fmt.Println(shift)
-	var ynStorage = NewDataWord()
+	var ynStorage = NewDataWord(len(u))
 	yn := ynStorage[:yLen]
 
 	for i := yLen - 1; i > 0; i-- {
@@ -249,12 +249,12 @@ func normalize(u, y DataWord) ([]uint32, []uint32) {
 	return un, yn
 }
 
-func (x DataWord) Mod(y DataWord) (result DataWord) {
+func (x ExtraBigInt) Mod(y ExtraBigInt) (result ExtraBigInt) {
 
 	return
 }
 
-func (x DataWord) GT(y DataWord) bool {
+func (x ExtraBigInt) GT(y ExtraBigInt) bool {
 	_, borrow := bits.Sub32(x[0], y[0], 0)
 	for i := 1; i < len(x); i++ {
 		_, borrow = bits.Sub32(x[i], y[i], borrow)
@@ -262,11 +262,11 @@ func (x DataWord) GT(y DataWord) bool {
 	return borrow == 0
 }
 
-func (x DataWord) LT(y DataWord) bool {
+func (x ExtraBigInt) LT(y ExtraBigInt) bool {
 	return !x.GT(y)
 }
 
-func (x DataWord) SLT(y DataWord) bool {
+func (x ExtraBigInt) SLT(y ExtraBigInt) bool {
 	dataWordSign := x.sign()
 	xSign := y.sign()
 
@@ -279,7 +279,7 @@ func (x DataWord) SLT(y DataWord) bool {
 	}
 }
 
-func (x DataWord) SGT(y DataWord) bool {
+func (x ExtraBigInt) SGT(y ExtraBigInt) bool {
 	dataWordSign := x.sign()
 	xSign := y.sign()
 
@@ -298,7 +298,7 @@ func (x DataWord) SGT(y DataWord) bool {
 	if dataWord < 0 return -1
 	if dataWord == 0 return 0
 */
-func (x DataWord) sign() int {
+func (x ExtraBigInt) sign() int {
 	if x.IsZero() {
 		return 0
 	}
@@ -308,7 +308,7 @@ func (x DataWord) sign() int {
 	return 1
 }
 
-func (x DataWord) Eq(y DataWord) bool {
+func (x ExtraBigInt) Eq(y ExtraBigInt) bool {
 	isEqual := true
 	for i := 0; i < len(x); i++ {
 		isEqual = isEqual && x[i] == y[i]
@@ -316,7 +316,7 @@ func (x DataWord) Eq(y DataWord) bool {
 	return isEqual
 }
 
-func (x DataWord) IsZero() bool {
+func (x ExtraBigInt) IsZero() bool {
 	for i := 0; i < len(x); i++ {
 		if x[i] != 0 {
 			return false
@@ -325,23 +325,23 @@ func (x DataWord) IsZero() bool {
 	return true
 }
 
-func (x DataWord) And(y DataWord) DataWord {
-	result := NewDataWord()
+func (x ExtraBigInt) And(y ExtraBigInt) ExtraBigInt {
+	result := NewDataWord(len(x))
 	for i := 0; i < len(x); i++ {
 		(result)[i] = x[i] & y[i]
 	}
 	return result
 }
 
-func (x DataWord) Or(y DataWord) DataWord {
-	result := NewDataWord()
+func (x ExtraBigInt) Or(y ExtraBigInt) ExtraBigInt {
+	result := NewDataWord(len(x))
 	for i := 0; i < len(x); i++ {
 		(result)[i] = x[i] | y[i]
 	}
 	return result
 }
 
-func (x DataWord) Not() (result DataWord) {
+func (x ExtraBigInt) Not() (result ExtraBigInt) {
 
 	for i := 0; i < len(x); i++ {
 		(result)[i] = ^x[i]
@@ -349,8 +349,8 @@ func (x DataWord) Not() (result DataWord) {
 	return
 }
 
-func (x DataWord) Xor(y DataWord) DataWord {
-	result := NewDataWord()
+func (x ExtraBigInt) Xor(y ExtraBigInt) ExtraBigInt {
+	result := NewDataWord(len(x))
 	for i := 0; i < len(x); i++ {
 		(result)[i] = x[i] ^ y[i]
 	}

@@ -3,6 +3,7 @@ package VM
 type Operation struct {
 	execute        OperationType
 	stackArgsCount int // number of arguments needed for the operation
+	codeArgsCount  uint
 	gasPrice       uint64
 	pcJump         uint
 }
@@ -18,10 +19,10 @@ const (
 	onePCJump = 1
 )
 
-type OperationMapping [100]Operation
+type JumpTable [100]Operation
 
-func newInstructionInfo() *OperationMapping {
-	var oppArray = new(OperationMapping)
+func newInstructionInfo() *JumpTable {
+	var oppArray = new(JumpTable)
 	(*oppArray)[ADD] =
 		Operation{
 			execute:        AddOP,
@@ -91,12 +92,6 @@ func newInstructionInfo() *OperationMapping {
 		gasPrice:       lowGasPrice,
 		pcJump:         0,
 	}
-	(*oppArray)[ALLOCATE] = Operation{
-		execute:        AllocateArrayOp,
-		stackArgsCount: 1,
-		gasPrice:       midGasPrice,
-		pcJump:         onePCJump,
-	}
 
 	(*oppArray)[SUBSCRIBE] = Operation{
 		execute:        SubscribeOp,
@@ -104,9 +99,45 @@ func newInstructionInfo() *OperationMapping {
 		gasPrice:       highGasPrice,
 		pcJump:         onePCJump,
 	}
+
+	(*oppArray)[PUSH32] = Operation{
+		execute:        PushOp,
+		stackArgsCount: 0,
+		gasPrice:       lowGasPrice,
+		codeArgsCount:  4,
+		pcJump:         0,
+	}
+	(*oppArray)[PUSHBOOl] = Operation{
+		execute:        PushOp,
+		stackArgsCount: 0,
+		gasPrice:       lowGasPrice,
+		codeArgsCount:  4,
+		pcJump:         0,
+	}
+	(*oppArray)[PUSHTIME] = Operation{
+		execute:        PushOp,
+		stackArgsCount: 0,
+		gasPrice:       lowGasPrice,
+		codeArgsCount:  6,
+		pcJump:         0,
+	}
+	(*oppArray)[PUSH64] = Operation{
+		execute:        PushOp,
+		stackArgsCount: 0,
+		gasPrice:       lowGasPrice,
+		codeArgsCount:  8,
+		pcJump:         0,
+	}
+	(*oppArray)[PUSH256] = Operation{
+		execute:        PushOp,
+		stackArgsCount: 0,
+		gasPrice:       lowGasPrice,
+		codeArgsCount:  32,
+		pcJump:         0,
+	}
 	return oppArray
 }
 
-func (Map *OperationMapping) getInstruction(index byte) Operation {
+func (Map *JumpTable) getInstruction(index byte) Operation {
 	return Map[index]
 }
