@@ -42,7 +42,7 @@ func intToByte(integer uint32) []byte {
 
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 8; j++ {
-			if (1<<(i*8)+j)&int(integer) != 0 {
+			if (1<<((i*8)+j))&int(integer) != 0 {
 				result[i] = result[i] | (1 << j)
 			}
 		}

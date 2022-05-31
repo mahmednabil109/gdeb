@@ -2,6 +2,7 @@ package OracleListener
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/mahmednabil109/gdeb/Messages"
 	"log"
 	"sync"
 )
@@ -26,8 +27,8 @@ func (conn *SafeConnection) writeMsg(message string) error {
 	return nil
 }
 
-func (conn *SafeConnection) readMessage() (*BroadcastMsg, error) {
-	var response *BroadcastMsg
+func (conn *SafeConnection) readMessage() (*Messages.BroadcastMsg, error) {
+	var response *Messages.BroadcastMsg
 	conn.mutex.Lock()
 	defer conn.mutex.Unlock()
 	err := conn.conn.ReadJSON(response)
