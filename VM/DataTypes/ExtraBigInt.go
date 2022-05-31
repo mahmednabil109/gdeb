@@ -1,6 +1,7 @@
 package DataTypes
 
 import (
+	"errors"
 	"fmt"
 	"math/bits"
 	"strconv"
@@ -158,102 +159,118 @@ func multiplyHelper(z, x, y, carry uint32) (hi, lo uint32) {
 	return hi, lo
 }
 
-func reciprocal2by1(d uint32) uint32 {
-	reciprocal, _ := bits.Div32(^d, ^uint32(0), d)
-	return reciprocal
-}
-
-func udivrem2by1(uh, ul, d, reciprocal uint32) (quot, rem uint32) {
-	qh, ql := bits.Mul32(reciprocal, uh)
-	ql, carry := bits.Add32(ql, ul, 0)
-	qh, _ = bits.Add32(qh, uh, carry)
-	qh++
-
-	r := ul - qh*d
-
-	if r > ql {
-		qh--
-		r += d
+func MyDiv(u, v []uint32) ([]uint32, []uint32, error) {
+	var (
+		b            uint64 = 1 << 32
+		un, vn, q, r []uint32
+		qhat         uint64
+		rhat         uint64
+		p            uint64
+		t, k         int64
+		s            int32
+	)
+	isAllZeros := true
+	for i := 0; i < len(v); i++ {
+		if v[i] != 0 {
+			isAllZeros = false
+		}
+	}
+	if isAllZeros {
+		return nil, nil, errors.New("divide by zero")
+	}
+	m := len(u)
+	n := len(v)
+	if m < n {
+		return nil, nil, errors.New("invalid")
 	}
 
-	if r >= d {
-		qh++
-		r -= d
+	s = int32(bits.LeadingZeros32(v[n-1]))
+
+	vn = make([]uint32, n)
+	for i := n - 1; i > 0; i-- {
+		vn[i] = (v[i] << s) | (v[i-1] >> (32 - s))
+	}
+	vn[0] = v[0] << s
+
+	un = make([]uint32, m+1)
+	un[m] = u[m-1] >> (32 - s)
+	for i := m - 1; i > 0; i-- {
+		un[i] = (u[i] << s) | (u[i-1] >> (32 - s))
+	}
+	un[0] = u[0] << s
+
+	q = make([]uint32, m-n+1)
+	r = make([]uint32, n)
+
+	for j := m - n; j >= 0; j-- {
+		qhat = (uint64(un[j+n])*b + uint64(un[j+n-1])) / uint64(vn[n-1])
+		rhat = (uint64(un[j+n])*b + uint64(un[j+n-1])) - qhat*uint64(vn[n-1])
+
+		for {
+			if qhat >= b || qhat*uint64(vn[n-2]) > b*rhat+uint64(un[j+n-2]) {
+				qhat -= 1
+				rhat += uint64(vn[n-1])
+				if rhat < b {
+					continue
+				}
+			}
+			break
+		}
+		k = 0
+		for i := 0; i < n; i++ {
+			p = qhat * uint64(vn[i])
+			t = int64(un[i+j]) - k - int64((p & 0xFFFFFFFF))
+			un[i+j] = uint32(t)
+			k = int64(p>>32) - (t >> 32)
+		}
+		t = int64(un[j+n]) - k
+		un[j+n] = uint32(t)
+
+		q[j] = uint32(qhat)
+
+		if t < 0 {
+			q[j] = q[j] - 1 // much, add back.
+			k = 0
+			for i := 0; i < n; i++ {
+				t = int64(un[i+j]) + int64(vn[i]) + k
+				un[i+j] = uint32(t)
+				k = t >> 32
+			}
+			un[j+n] = un[j+n] + uint32(k)
+		}
+
 	}
 
-	return qh, r
+	for i := 0; i < n-1; i++ {
+		r[i] = (un[i] >> s) | (un[i+1] << (32 - s))
+		r[n-1] = un[n-1] >> s
+	}
+
+	return q, r, nil
 }
 
 func (x ExtraBigInt) Div(y ExtraBigInt) []uint32 {
+	fmt.Println("y =", y)
 
 	//b := 1 << 32
-	u, v := normalize(x, y)
-
-	vh := v[len(v)-1]
-	vl := v[len(v)-2]
-	reciprocal := reciprocal2by1(vh)
-
-	for j := len(u) - len(v) - 1; j >= 0; j-- {
-		u2 := u[j+len(v)]
-		u1 := u[j+len(v)-1]
-		u0 := u[j+len(v)-2]
-
-		var qhat, rhat uint32
-		if u2 >= vh { // Division overflows.
-			qhat = ^uint32(0)
-		} else {
-			qhat, rhat = udivrem2by1(u2, u1, vh, reciprocal)
-			ph, pl := bits.Mul32(qhat, vl)
-			if ph > rhat || (ph == rhat && pl > u0) {
-				qhat--
-			}
-		}
-	}
-
-	q := make([]uint32, 8)
-
-	return q
-}
-
-func normalize(u, y ExtraBigInt) ([]uint32, []uint32) {
-
-	var yLen int
+	var ylen int
 	for i := len(y) - 1; i >= 0; i-- {
 		if y[i] != 0 {
-			yLen = i + 1
+			ylen = i + 1
 			break
 		}
 	}
-	shift := bits.LeadingZeros32(y[yLen-1])
-	fmt.Println(shift)
-	var ynStorage = NewExtraBigInt(len(u))
-	yn := ynStorage[:yLen]
-
-	for i := yLen - 1; i > 0; i-- {
-		yn[i] = (y[i] << shift) | (yn[i-1] >> (32 - shift))
+	if cap(y) >= ylen+1 {
+		y = y[:ylen+1]
+	} else {
+		y = y[:ylen]
 	}
-	yn[0] = y[0] << shift
-
-	var uLen int
-	for i := len(u) - 1; i >= 0; i-- {
-		if u[i] != 0 {
-			uLen = i + 1
-			break
-		}
+	fmt.Println("y =", y)
+	q, _, err := MyDiv(x, y)
+	if err != nil {
+		return make([]uint32, 1)
 	}
-
-	var unStorage = make([]uint32, 9)
-	un := unStorage[:uLen+1]
-	un[uLen] = u[uLen-1] >> (32 - shift)
-	for i := uLen - 1; i > 0; i-- {
-		un[i] = (u[i] << shift) | (u[i-1] >> (64 - shift))
-	}
-	un[0] = u[0] << shift
-
-	fmt.Println(u, un)
-	fmt.Println(y, yn)
-
-	return un, yn
+	return q
 }
 
 func (x ExtraBigInt) Mod(y ExtraBigInt) (result ExtraBigInt) {

@@ -89,21 +89,11 @@ func main() {
 	// cons := consensus.New(&communNetwCons)
 	// netw := network.New(&communNetwCons)
 
-	d1 := DataTypes.NewData(DataTypes.Int64)
-	d1.Data[1] = 1 << 31
-	d2 := DataTypes.NewData(DataTypes.Int64)
-	d2.Data[1] = 1 << 30
-	fmt.Println(d1.Data.ToBinary(), d2.Data.ToBinary())
-
-	fmt.Println(d2.Data.Sub(d1.Data).ToBinary())
-
-	var a uint32 = 1<<32 - 1
-
-	var b uint32 = 1<<32 - 1
-	fmt.Println(toBinary32(a))
-	fmt.Println(toBinary32(b))
-	fmt.Println(toBinary32(b + a))
-
+	a := DataTypes.NewExtraBigInt(5)
+	a[3] = 12
+	b := DataTypes.NewExtraBigInt(5)
+	b[2] = 3
+	fmt.Println(a.Div(b))
 	////code snippet to test ValidateLeader function
 	//PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
 	//PrivateKey, _ := hex.DecodeString("e70b0983a423db62605c527109306d67e16a69d2f4d6641183242e1eac462d27bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")

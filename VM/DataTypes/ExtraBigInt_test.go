@@ -101,11 +101,9 @@ func TestExtraBigInt_SetDataWord(t *testing.T) {
 }
 
 func TrimZeros(s string) string {
-	if len(s) == 0 {
-		return s
-	}
+
 	b := []byte(s)
-	for b[0] == '0' {
+	for len(b) > 0 && b[0] == '0' {
 		b = b[1:]
 	}
 	return string(b)
@@ -130,7 +128,15 @@ func generateDataWord(size int) ExtraBigInt {
 	dataWord := NewExtraBigInt(size + 1)
 
 	for i := 0; i < size; i++ {
-		dataWord.SetUint32(uint32(rand.Intn(10)), uint(i))
+		dataWord.SetUint32(rand.Uint32(), uint(i))
+	}
+	return dataWord
+}
+func generateSmallDataWord(size int) ExtraBigInt {
+	dataWord := NewExtraBigInt(size + 1)
+
+	for i := 0; i < 2; i++ {
+		dataWord.SetUint32(uint32(rand.Intn(50)), uint(i))
 	}
 	return dataWord
 }
@@ -138,7 +144,7 @@ func generateDataWord(size int) ExtraBigInt {
 func generateTests(i int) (a ExtraBigInt, b ExtraBigInt, aBig *big.Int, bBig *big.Int) {
 
 	a = generateDataWord(i)
-	b = generateDataWord(i)
+	b = generateSmallDataWord(i)
 	aBig, _ = new(big.Int).SetString(a.ToBinary(), 2)
 	bBig, _ = new(big.Int).SetString(b.ToBinary(), 2)
 
@@ -247,7 +253,7 @@ func TestExtraBigInt_Mul(t *testing.T) {
 	}
 }
 
-func TestExtraBigInt_Sub(t *testing.T) {
+func TestExtraBigInt_Xor(t *testing.T) {
 	type args struct {
 		y ExtraBigInt
 	}
@@ -265,6 +271,223 @@ func TestExtraBigInt_Sub(t *testing.T) {
 
 	for i := 1; i < 70; i++ {
 		a, b, aBig, bBig := generateTests(i)
+		result := a.Xor(b)
+		resultBigInt := new(big.Int)
+		resultBigInt.Xor(aBig, bBig)
+		tStruct := struct {
+			name              string
+			x                 ExtraBigInt
+			args              args
+			ExtraBigIntResult string
+			BigInt            string
+		}{
+			// TODO: Add test cases.
+			name: "Test" + strconv.Itoa(i),
+			x:    a,
+			args: args{
+				y: b,
+			},
+			ExtraBigIntResult: TrimZeros(uintArrayToBinary(result)),
+			BigInt:            TrimZeros(resultBigInt.Text(2)),
+		}
+		tests = append(tests, tStruct)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fmt.Println(tt.BigInt)
+			fmt.Println(tt.ExtraBigIntResult)
+			if tt.BigInt != tt.ExtraBigIntResult {
+				t.Errorf("Add() = %v, ExtraBigIntResult %v", tt.BigInt, tt.ExtraBigIntResult)
+			}
+		})
+	}
+}
+
+func TestExtraBigInt_And(t *testing.T) {
+	type args struct {
+		y ExtraBigInt
+	}
+
+	tests := []struct {
+		name              string
+		x                 ExtraBigInt
+		args              args
+		ExtraBigIntResult string
+		BigInt            string
+	}{
+		// TODO: Add test cases.
+		{},
+	}
+
+	for i := 1; i < 70; i++ {
+		a, b, aBig, bBig := generateTests(i)
+		result := a.And(b)
+		resultBigInt := new(big.Int)
+		resultBigInt.And(aBig, bBig)
+		tStruct := struct {
+			name              string
+			x                 ExtraBigInt
+			args              args
+			ExtraBigIntResult string
+			BigInt            string
+		}{
+			// TODO: Add test cases.
+			name: "Test" + strconv.Itoa(i),
+			x:    a,
+			args: args{
+				y: b,
+			},
+			ExtraBigIntResult: TrimZeros(uintArrayToBinary(result)),
+			BigInt:            TrimZeros(resultBigInt.Text(2)),
+		}
+		tests = append(tests, tStruct)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fmt.Println(tt.BigInt)
+			fmt.Println(tt.ExtraBigIntResult)
+			if tt.BigInt != tt.ExtraBigIntResult {
+				t.Errorf("Add() = %v, ExtraBigIntResult %v", tt.BigInt, tt.ExtraBigIntResult)
+			}
+		})
+	}
+}
+
+func TestExtraBigInt_Or(t *testing.T) {
+	type args struct {
+		y ExtraBigInt
+	}
+
+	tests := []struct {
+		name              string
+		x                 ExtraBigInt
+		args              args
+		ExtraBigIntResult string
+		BigInt            string
+	}{
+		// TODO: Add test cases.
+		{},
+	}
+
+	for i := 1; i < 70; i++ {
+		a, b, aBig, bBig := generateTests(i)
+		result := a.Or(b)
+		resultBigInt := new(big.Int)
+		resultBigInt.Or(aBig, bBig)
+		tStruct := struct {
+			name              string
+			x                 ExtraBigInt
+			args              args
+			ExtraBigIntResult string
+			BigInt            string
+		}{
+			// TODO: Add test cases.
+			name: "Test" + strconv.Itoa(i),
+			x:    a,
+			args: args{
+				y: b,
+			},
+			ExtraBigIntResult: TrimZeros(uintArrayToBinary(result)),
+			BigInt:            TrimZeros(resultBigInt.Text(2)),
+		}
+		tests = append(tests, tStruct)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fmt.Println(tt.BigInt)
+			fmt.Println(tt.ExtraBigIntResult)
+			if tt.BigInt != tt.ExtraBigIntResult {
+				t.Errorf("Add() = %v, ExtraBigIntResult %v", tt.BigInt, tt.ExtraBigIntResult)
+			}
+		})
+	}
+}
+
+func TestExtraBigInt_Div(t *testing.T) {
+	type args struct {
+		y ExtraBigInt
+	}
+
+	tests := []struct {
+		name              string
+		x                 ExtraBigInt
+		args              args
+		ExtraBigIntResult string
+		BigInt            string
+	}{
+		// TODO: Add test cases.
+		{},
+	}
+
+	for i := 1; i < 400; i++ {
+		var a, b ExtraBigInt
+		var aBig, bBig *big.Int
+		a, b, aBig, bBig = generateTests(i)
+
+		fmt.Println("Test", i)
+		fmt.Println("a, b :=", a, b)
+		fmt.Println("BigA, BigB", aBig.Text(10), bBig.Text(10))
+		result := a.Div(b)
+		resultBigInt := new(big.Int)
+		resultBigInt.Div(aBig, bBig)
+		fmt.Println("a/b :=", result)
+		fmt.Println("BigA/BigB = ", resultBigInt.Text(10))
+		fmt.Println()
+		//if len(resultBigInt.Text(2)) == 0 || len(result) == 0 {
+		//	continue
+		//}
+		tStruct := struct {
+			name              string
+			x                 ExtraBigInt
+			args              args
+			ExtraBigIntResult string
+			BigInt            string
+		}{
+			// TODO: Add test cases.
+			name: "Test" + strconv.Itoa(i),
+			x:    a,
+			args: args{
+				y: b,
+			},
+			ExtraBigIntResult: TrimZeros(uintArrayToBinary(result)),
+			BigInt:            TrimZeros(resultBigInt.Text(2)),
+		}
+		tests = append(tests, tStruct)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			//t.Parallel()
+			fmt.Println(tt.BigInt)
+			fmt.Println(tt.ExtraBigIntResult)
+			if tt.BigInt != tt.ExtraBigIntResult {
+				t.Errorf("Div() = %v, ExtraBigIntResult %v", tt.BigInt, tt.ExtraBigIntResult)
+			}
+		})
+	}
+}
+
+func TestExtraBigInt_Sub(t *testing.T) {
+	type args struct {
+		y ExtraBigInt
+	}
+
+	tests := []struct {
+		name              string
+		x                 ExtraBigInt
+		args              args
+		ExtraBigIntResult string
+		BigInt            string
+	}{
+		// TODO: Add test cases.
+		{},
+	}
+
+	for i := 1; i < 70; i++ {
+		a, b, aBig, bBig := generateTests(rand.Intn(20))
 		r1 := a.Sub(b)
 		r2 := new(big.Int)
 		r2.Sub(aBig, bBig)
