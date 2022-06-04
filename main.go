@@ -14,8 +14,11 @@ import (
 	"github.com/yoseplee/vrf"
 )
 
+const (
+	totalCoins = 1000
+)
+
 var (
-	totalCoins        uint64
 	stakeDist         blockchain.StakeDistribution
 	deployedContracts []string
 	privateKey        ed25519.PrivateKey

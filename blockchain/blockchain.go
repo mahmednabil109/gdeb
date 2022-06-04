@@ -71,8 +71,8 @@ func (bc *Blockchain) Init() {
 	}()
 }
 
-//! handle fork ??
-func (bc *Blockchain) Add(block data.Block) {
+// block paramater has already been validated, add to blockchain and handle forks (keeping track of side chains and longest one in them)
+func (bc *Blockchain) Update(block data.Block) {
 	bc.mux.Lock()
 	defer bc.mux.Unlock()
 
