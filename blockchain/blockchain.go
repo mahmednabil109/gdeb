@@ -73,6 +73,13 @@ var (
 // 	}()
 // }
 
+func (bc *Blockchain) GetSlot() int {
+	return bc.Chain[len(bc.Chain)-1].Slot
+}
+func (bc *Blockchain) GetPrevHash() string {
+	return bc.Chain[len(bc.Chain)-1].PreviousHash
+}
+
 // block paramater has already been validated, add to blockchain and handle forks (keeping track of side chains and longest one in them)
 func (bc *Blockchain) Update(block *data.Block) {
 	bc.Mux.Lock()

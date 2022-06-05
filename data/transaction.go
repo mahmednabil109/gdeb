@@ -54,14 +54,7 @@ func (t *Transaction) Validate() bool {
 	return ed25519.Verify(publicKey, unsignedJSON, signature)
 }
 
-func (t *Transaction) Sign() {
-	// private key of node hard-coded for now
-	//mock values:
-	// "PublicKey": "317f55e2a701a149d5385fe10ff8fe92762309914e85a91f59e90743f5909b52",
-	// "PrivateKey": "b63d61f2c90efa388a565b39f84e903538b8347773262019b9c4f2189abca9ee317f55e2a701a149d5385fe10ff8fe92762309914e85a91f59e90743f5909b52",
-
-	sk, _ := hex.DecodeString("b63d61f2c90efa388a565b39f84e903538b8347773262019b9c4f2189abca9ee317f55e2a701a149d5385fe10ff8fe92762309914e85a91f59e90743f5909b52")
-	privateKey := ed25519.PrivateKey(sk)
+func (t *Transaction) Sign(privateKey ed25519.PrivateKey) {
 	unsigned := t.unsigned()
 	unsignedJSON, _ := json.Marshal(unsigned)
 	signature := ed25519.Sign(privateKey, unsignedJSON)
