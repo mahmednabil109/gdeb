@@ -43,6 +43,12 @@ func New(c *communication.CommunNetwCons, stakeDist *blockchain.StakeDistributio
 	}
 }
 
+func (c *Consensus) sendTransaction(t data.Transaction) {
+	if c.validTrans(&t) {
+		c.ChanConsTransaction <- t
+	}
+}
+
 func (c *Consensus) CreateBlock() {
 	slot := c.Blockchain.GetSlot() + 1
 	vrf_input := []byte(fmt.Sprintf("%d%s", slot, c.epochNonce))
