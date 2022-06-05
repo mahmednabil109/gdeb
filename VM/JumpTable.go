@@ -44,7 +44,7 @@ func newJumpTable() *JumpTable {
 	}
 	(*oppArray)[DIV] = Operation{}
 	//(*oppArray)[GT] = Operation{
-	//	execute:        GreaterOp,
+	//	run:        GreaterOp,
 	//	stackArgsCount: 2,
 	//	gasPrice:       lowGasPrice,
 	//	pcJump:         onePCJump,

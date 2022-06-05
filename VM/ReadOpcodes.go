@@ -40,7 +40,7 @@ func Read() {
 	//code = byteArr
 	//fmt.Println(len(code))
 	//inter := newInterpreter(&code, 1000)
-	//err := inter.execute()
+	//err := inter.run()
 	//if err != nil {
 	//	return
 	//}

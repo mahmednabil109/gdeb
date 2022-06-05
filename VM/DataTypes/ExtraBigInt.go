@@ -22,6 +22,10 @@ func arrayToDataWord(array []uint32) ExtraBigInt {
 	return result
 }
 
+func (x ExtraBigInt) ToInt64() uint64 {
+	return uint64(x[0]) + (uint64(x[1]) << 32)
+}
+
 func ByteArrToBigInt(arr []byte) ExtraBigInt {
 	bigInt := ExtraBigInt{}
 	bigInt.SetDataWord(arr)
@@ -51,7 +55,7 @@ func intToByte(integer uint32) []byte {
 	return result
 }
 
-func (x ExtraBigInt) toByteArray() []byte {
+func (x ExtraBigInt) ToByteArray() []byte {
 
 	result := make([]byte, 1)
 
@@ -62,7 +66,7 @@ func (x ExtraBigInt) toByteArray() []byte {
 }
 
 func (x ExtraBigInt) toString() string {
-	return string(x.toByteArray())
+	return string(x.ToByteArray())
 }
 func (x ExtraBigInt) ToBinary() string {
 	result := ""
@@ -135,17 +139,14 @@ func (x ExtraBigInt) Multiply(y ExtraBigInt) (ExtraBigInt, bool) {
 }
 
 func mul(x, y ExtraBigInt) []uint32 {
-	result := make([]uint32, len(x)*2)
+	result := make([]uint32, len(x)+len(y))
 	for Yi := 0; Yi < len(y); Yi++ {
 		var carry uint32 = 0
-		Ri := Yi
 		Xi := 0
 		for ; Xi < len(x); Xi = Xi + 1 {
-			var lastRes = result[Xi+Ri]
-
-			carry, result[Xi+Ri] = multiplyHelper(lastRes, x[Xi], y[Yi], carry)
+			carry, result[Xi+Yi] = multiplyHelper(result[Xi+Yi], x[Xi], y[Yi], carry)
 		}
-		result[Ri+Xi] = carry
+		result[Yi+Xi] = carry
 	}
 	return result
 }
@@ -219,7 +220,7 @@ func MyDiv(u, v []uint32) ([]uint32, []uint32, error) {
 		k = 0
 		for i := 0; i < n; i++ {
 			p = qhat * uint64(vn[i])
-			t = int64(un[i+j]) - k - int64((p & 0xFFFFFFFF))
+			t = int64(un[i+j]) - k - int64(p&0xFFFFFFFF)
 			un[i+j] = uint32(t)
 			k = int64(p>>32) - (t >> 32)
 		}
@@ -243,8 +244,8 @@ func MyDiv(u, v []uint32) ([]uint32, []uint32, error) {
 
 	for i := 0; i < n-1; i++ {
 		r[i] = (un[i] >> s) | (un[i+1] << (32 - s))
-		r[n-1] = un[n-1] >> s
 	}
+	r[n-1] = un[n-1] >> s
 
 	return q, r, nil
 }
@@ -283,7 +284,7 @@ func (x ExtraBigInt) GT(y ExtraBigInt) bool {
 	for i := 1; i < len(x); i++ {
 		_, borrow = bits.Sub32(x[i], y[i], borrow)
 	}
-	return borrow == 0
+	return borrow == 0 && !x.Eq(y)
 }
 
 func (x ExtraBigInt) LT(y ExtraBigInt) bool {

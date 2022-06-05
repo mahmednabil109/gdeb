@@ -3,18 +3,40 @@ package VM
 import (
 	"errors"
 	"fmt"
-	"github.com/mahmednabil109/gdeb/OracleListener"
+	"github.com/mahmednabil109/gdeb/Listeners/OracleListener"
+	"github.com/mahmednabil109/gdeb/Messages"
+	"time"
 )
+
+type Frequency byte
+
+const (
+	ONCE    Frequency = 0
+	HOURLY  Frequency = 1
+	DAILY   Frequency = 2
+	WEEKLY  Frequency = 3
+	MONTHLY Frequency = 4
+	YEARLY  Frequency = 5
+)
+
+type PeriodicExecution struct {
+	startTime         time.Time
+	frequency         Frequency
+	executionInterval time.Duration // in minutes
+}
 
 type Interpreter struct {
 	Id                 int
 	state              *State
 	ContractCode       []byte
 	OraclePool         *OracleListener.OraclePool
-	ReceiveChan        chan *OracleListener.BroadcastMsg
+	ReceiveChan        chan *Messages.BroadcastMsg
+	TransactionChan    chan interface{}
 	jumpTable          *JumpTable
 	gasLimit           uint64
-	oracleTransactions map[int]*OracleListener.BroadcastMsg
+	oracleTransactions map[int]*Messages.BroadcastMsg
+	reservedIndex      []int
+	periodicExecution  *PeriodicExecution
 }
 
 func newInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool, gasLimit uint64) *Interpreter {
@@ -23,15 +45,16 @@ func newInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool
 		state:              newState(),
 		ContractCode:       contractCode,
 		OraclePool:         pool,
-		ReceiveChan:        make(chan *OracleListener.BroadcastMsg),
+		ReceiveChan:        make(chan *Messages.BroadcastMsg),
 		jumpTable:          newJumpTable(),
 		gasLimit:           gasLimit,
-		oracleTransactions: make(map[int]*OracleListener.BroadcastMsg),
+		oracleTransactions: make(map[int]*Messages.BroadcastMsg),
+		reservedIndex:      make([]int, 0),
 	}
 }
 
 // TODO when error happens --> unsubscribe from the oraclePool
-func (interpreter *Interpreter) execute() error {
+func (interpreter *Interpreter) run() error {
 
 	for {
 
@@ -55,6 +78,7 @@ func (interpreter *Interpreter) execute() error {
 			return err
 		}
 
+		//Todo check that the operation is not transfer
 		*consumedGas += operationInfo.gasPrice
 
 		*pc += operationInfo.pcJump

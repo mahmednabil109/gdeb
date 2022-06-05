@@ -6,9 +6,21 @@ import (
 	"time"
 )
 
+type Frequency byte
+
+const (
+	ONCE    Frequency = 0
+	HOURLY  Frequency = 1
+	DAILY   Frequency = 2
+	WEEKLY  Frequency = 3
+	MONTHLY Frequency = 4
+	YEARLY  Frequency = 5
+)
+
 type SubscribeMsg struct {
 	Id           int
 	Time         []byte
+	Frequency    Frequency
 	ResponseChan chan *Messages.BroadcastMsg
 	Idx          int
 }
@@ -19,6 +31,7 @@ type UnsubscribeMsg struct {
 
 type subscriber struct {
 	Time         *time.Time
+	Frequency    Frequency
 	ResponseChan chan *Messages.BroadcastMsg
 	Idx          int
 }
@@ -56,6 +69,7 @@ func (listener *TimeListener) handleSubscribe() {
 				Idx:          msg.Idx,
 				Time:         arrToTime(msg.Time),
 				ResponseChan: msg.ResponseChan,
+				Frequency:    msg.Frequency,
 			}
 			listener.mutex.Lock()
 			if list, isOk := listener.Subscribers[id]; isOk {
@@ -82,14 +96,19 @@ func (listener *TimeListener) handleUnsubscribe() {
 		}
 	}
 }
+
 func (listener *TimeListener) handlePublishing() {
 	for {
 		for k, list := range listener.Subscribers {
 			toBeRemoved := make([]int, 0)
 			listener.mutex.Lock()
 			for i, v := range list {
-				if time.Now().UTC().After(*v.Time) {
-					toBeRemoved = append(toBeRemoved, i)
+				if time.Now().UTC().After(*v.Time) || time.Now().UTC().Equal(*v.Time) {
+					if v.Frequency == ONCE {
+						toBeRemoved = append(toBeRemoved, i)
+					} else {
+						*v.Time = nextTime(v.Frequency, *(v.Time))
+					}
 					v.ResponseChan <- &Messages.BroadcastMsg{
 						Type:      0,
 						Value:     []byte("OK"),
@@ -110,6 +129,23 @@ func (listener *TimeListener) handlePublishing() {
 
 		}
 		time.Sleep(3 * time.Second)
+	}
+}
+
+func nextTime(frequency Frequency, now time.Time) time.Time {
+	switch frequency {
+	case HOURLY:
+		return now.Add(time.Hour)
+	case DAILY:
+		return now.AddDate(0, 0, 1)
+	case WEEKLY:
+		return now.AddDate(0, 0, 7)
+	case MONTHLY:
+		return now.AddDate(0, 1, 0)
+	case YEARLY:
+		return now.AddDate(1, 0, 0)
+	default:
+		return now
 	}
 }
 

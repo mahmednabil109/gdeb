@@ -2,9 +2,10 @@ package VM
 
 import (
 	"errors"
-	"github.com/mahmednabil109/gdeb/OracleListener"
+	"github.com/mahmednabil109/gdeb/Messages"
 	"github.com/mahmednabil109/gdeb/VM/DataTypes"
 	"strconv"
+	"time"
 )
 
 type (
@@ -459,28 +460,29 @@ func SubscribeOp(interpreter *Interpreter) error {
 	returnIndex := stack.Pop().Data.ToInt32()
 	keyType := stack.Pop().Data
 	key := stack.Pop().Data
-	size := stack.Pop().Data
-	offset := stack.Pop().Data
+	size := int(stack.Pop().Data.ToInt32())
+	offset := int(stack.Pop().Data.ToInt32())
+	url := string(interpreter.ContractCode[offset : offset+size])
 
-	url := string(interpreter.ContractCode[int(offset.ToInt32()):int(size.ToInt32())])
-
-	sub := &OracleListener.SubscribeMsg{
+	sub := &Messages.SubscribeMsg{
 		VmId:          interpreter.Id,
-		OracleKey:     string(key.ToInt32()),
+		OracleKey:     strconv.Itoa(int(key.ToInt32())),
 		KeyType:       int(keyType.ToInt32()),
 		Url:           url,
 		BroadcastChan: interpreter.ReceiveChan,
 		Index:         int(returnIndex),
 	}
+	interpreter.reservedIndex = append(interpreter.reservedIndex, int(returnIndex))
 	Pool.Subscribe(sub)
 
 	return nil
 }
 
-func FetchDataOp(interpreter *Interpreter) error {
+func WaitOp(interpreter *Interpreter) error {
 	receiveChan := interpreter.ReceiveChan
 
 	Memory := interpreter.state.Memory
+Outer:
 	for {
 
 		select {
@@ -496,9 +498,9 @@ func FetchDataOp(interpreter *Interpreter) error {
 				Data:     DataTypes.ByteArrToBigInt(val),
 				Datatype: DataTypes.Datatype(dataType),
 			}
-			for _, v := range Memory {
-				if v == nil {
-					break
+			for _, v := range interpreter.reservedIndex {
+				if Memory[v] == nil {
+					continue Outer
 				}
 			}
 			return nil
@@ -509,5 +511,39 @@ func FetchDataOp(interpreter *Interpreter) error {
 func LoadOp(interpreter *Interpreter) error {
 	memory, idx := interpreter.state.Memory, interpreter.state.Stack.Pop().Data.ToInt32()
 	interpreter.state.Stack.Push(memory[idx])
+	return nil
+}
+
+func ExecutePeriodicallyOp(interpreter *Interpreter) error {
+
+	stack := interpreter.state.Stack
+	executionInterval := stack.Pop()
+	freq := stack.Pop().Data.ToInt32()
+	if freq < uint32(ONCE) || freq > uint32(YEARLY) {
+		return errors.New("error in Frequency")
+	}
+	startTime := stack.Pop()
+	if executionInterval.Datatype == DataTypes.Boolean || executionInterval.Datatype == DataTypes.Time ||
+		executionInterval.Datatype == DataTypes.String {
+		return errors.New("cannot use " + strconv.Itoa(int(executionInterval.Datatype)) + " as executionInterval")
+	}
+	arrToTime := func(arr []byte) time.Time {
+		var year = uint16(arr[1])<<8 + uint16(arr[0])
+		t := time.Date(int(year), time.Month(int(arr[2])), int(arr[3]), int(arr[4]), int(arr[5]), int(arr[6]), 0, time.UTC)
+		return t
+	}
+
+	interpreter.periodicExecution = &PeriodicExecution{
+		startTime:         arrToTime(startTime.Data.ToByteArray()),
+		frequency:         Frequency(freq),
+		executionInterval: time.Duration(executionInterval.Data.ToInt64()),
+	}
+
+	return nil
+}
+
+// Transfer TODO
+func Transfer(interpreter *Interpreter) error {
+
 	return nil
 }

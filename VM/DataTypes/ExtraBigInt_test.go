@@ -125,7 +125,7 @@ func ByteArrToBinary(x []byte) string {
 }
 
 func generateDataWord(size int) ExtraBigInt {
-	dataWord := NewExtraBigInt(size + 1)
+	dataWord := NewExtraBigInt(size)
 
 	for i := 0; i < size; i++ {
 		dataWord.SetUint32(rand.Uint32(), uint(i))
@@ -144,7 +144,7 @@ func generateSmallDataWord(size int) ExtraBigInt {
 func generateTests(i int) (a ExtraBigInt, b ExtraBigInt, aBig *big.Int, bBig *big.Int) {
 
 	a = generateDataWord(i)
-	b = generateSmallDataWord(i)
+	b = generateDataWord(i)
 	aBig, _ = new(big.Int).SetString(a.ToBinary(), 2)
 	bBig, _ = new(big.Int).SetString(b.ToBinary(), 2)
 
@@ -167,7 +167,7 @@ func TestExtraBigInt_Add(t *testing.T) {
 		{},
 	}
 
-	for i := 1; i < 70; i++ {
+	for i := 1; i < 200; i++ {
 		a, b, aBig, bBig := generateTests(i)
 		result := a.Add(b)
 		resultBigInt := new(big.Int)
@@ -218,9 +218,11 @@ func TestExtraBigInt_Mul(t *testing.T) {
 		{},
 	}
 
-	for i := 1; i < 70; i++ {
+	for i := 1; i < 200; i++ {
 		a, b, aBig, bBig := generateTests(i)
 		result := mul(a, b)
+		fmt.Println("Test", i)
+		fmt.Println("aBig, bBig :=", aBig, bBig)
 		resultBigInt := new(big.Int)
 		resultBigInt.Mul(aBig, bBig)
 		tStruct := struct {
@@ -525,6 +527,62 @@ func TestExtraBigInt_Sub(t *testing.T) {
 			fmt.Println(tt.ExtraBigIntResult)
 			if tt.BigInt != tt.ExtraBigIntResult {
 				t.Errorf("Sub() = %s, ExtraBigIntResult %s", tt.BigInt, tt.ExtraBigIntResult)
+			}
+		})
+	}
+}
+
+func TestExtraBigInt_GT(t *testing.T) {
+	type args struct {
+		y ExtraBigInt
+	}
+
+	tests := []struct {
+		name              string
+		x                 ExtraBigInt
+		args              args
+		ExtraBigIntResult int
+		BigInt            int
+	}{
+		// TODO: Add test cases.
+		{},
+	}
+
+	for i := 1; i < 70; i++ {
+		a, b, aBig, bBig := generateTests(i)
+		var result int
+		isGreater := a.GT(b)
+		if isGreater {
+			result = 1
+		} else {
+			result = -1
+		}
+		rBig := aBig.Cmp(bBig)
+		tStruct := struct {
+			name              string
+			x                 ExtraBigInt
+			args              args
+			ExtraBigIntResult int
+			BigInt            int
+		}{
+			// TODO: Add test cases.
+			name: "Test" + strconv.Itoa(i),
+			x:    a,
+			args: args{
+				y: b,
+			},
+			ExtraBigIntResult: result,
+			BigInt:            rBig,
+		}
+		tests = append(tests, tStruct)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fmt.Println(tt.BigInt)
+			fmt.Println(tt.ExtraBigIntResult)
+			if tt.BigInt != tt.ExtraBigIntResult {
+				t.Errorf("Add() = %v, ExtraBigIntResult %v", tt.BigInt, tt.ExtraBigIntResult)
 			}
 		})
 	}

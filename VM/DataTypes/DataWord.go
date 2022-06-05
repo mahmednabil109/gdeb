@@ -31,9 +31,9 @@ func (x DataWord) ToString() string {
 			return "False"
 		}
 	} else if x.Datatype == String {
-		return string(x.Data.toByteArray())
+		return string(x.Data.ToByteArray())
 	}
-	dataToByte := d.toByteArray()
+	dataToByte := d.ToByteArray()
 	var year = uint16(dataToByte[1])<<8 + uint16(dataToByte[0])
 	t := time.Date(int(year), time.Month(int(d[2])), int(d[3]), int(d[4]), int(d[5]), int(d[6]), 0, time.UTC)
 	return t.String()
