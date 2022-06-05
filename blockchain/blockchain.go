@@ -11,8 +11,8 @@ import (
 
 // handle fork (appropriate data structure)
 type Blockchain struct {
-	chain []data.Block
-	mux   sync.Mutex
+	Chain []*data.Block
+	Mux   sync.Mutex
 }
 
 /*
@@ -21,9 +21,11 @@ type Blockchain struct {
 		           \ [slot 6] <= [slot 7] <= [slot 8]
 */
 
-func NewBlockchain() *Blockchain {
+func NewBlockchain(dist map[string]float64) *Blockchain {
+	chain := make([]*data.Block, 0)
+	chain = append(chain, data.GenesisBlock(dist))
 	return &Blockchain{
-		chain: make([]data.Block, 0),
+		Chain: chain,
 	}
 }
 
@@ -33,56 +35,56 @@ var (
 )
 
 // write to disk (goroutine)
-func (bc *Blockchain) Init() {
-	bc.chain = []data.Block{}
+// func (bc *Blockchain) Init() {
+// 	bc.chain = []data.Block{}
 
-	if _, err := os.Stat(BLOCKCHAIN_PATH); err != nil {
-		if os.IsNotExist(err) {
-			// file does not exist
-		} else {
-			go func() {
-				bc.mux.Lock()
-				defer bc.mux.Unlock()
-				// err := readGob(BLOCKCHAIN_PATH, bc.chain)
-			}()
-		}
-	}
+// 	if _, err := os.Stat(BLOCKCHAIN_PATH); err != nil {
+// 		if os.IsNotExist(err) {
+// 			// file does not exist
+// 		} else {
+// 			go func() {
+// 				bc.mux.Lock()
+// 				defer bc.mux.Unlock()
+// 				// err := readGob(BLOCKCHAIN_PATH, bc.chain)
+// 			}()
+// 		}
+// 	}
 
-	go func() {
-		ticker := time.NewTicker(SAVE_FREQ)
-		for {
-			select {
-			case <-ticker.C:
-				// serialize the blockchain in the fs
+// 	go func() {
+// 		ticker := time.NewTicker(SAVE_FREQ)
+// 		for {
+// 			select {
+// 			case <-ticker.C:
+// 				// serialize the blockchain in the fs
 
-				// to minimize the time we hold the mutex
-				var chain_copy []data.Block
-				bc.mux.Lock()
-				copy(chain_copy, bc.chain)
-				bc.mux.Unlock()
+// 				// to minimize the time we hold the mutex
+// 				var chain_copy []data.Block
+// 				bc.mux.Lock()
+// 				copy(chain_copy, bc.chain)
+// 				bc.mux.Unlock()
 
-				err := writeGob(BLOCKCHAIN_PATH, chain_copy)
-				if err != nil {
-					panic(err)
-				}
+// 				err := writeGob(BLOCKCHAIN_PATH, chain_copy)
+// 				if err != nil {
+// 					panic(err)
+// 				}
 
-			}
-		}
-	}()
-}
+// 			}
+// 		}
+// 	}()
+// }
 
 // block paramater has already been validated, add to blockchain and handle forks (keeping track of side chains and longest one in them)
-func (bc *Blockchain) Update(block data.Block) {
-	bc.mux.Lock()
-	defer bc.mux.Unlock()
+func (bc *Blockchain) Update(block *data.Block) {
+	bc.Mux.Lock()
+	defer bc.Mux.Unlock()
 
-	bc.chain = append(bc.chain, block)
+	bc.Chain = append(bc.Chain, block)
 }
 
 // returns a copy of the blockchain
-func (bc *Blockchain) GetBlockchain() []data.Block {
-	var chain_copy []data.Block
-	copy(chain_copy, bc.chain)
+func (bc *Blockchain) GetBlockchain() []*data.Block {
+	var chain_copy []*data.Block
+	copy(chain_copy, bc.Chain)
 	return chain_copy
 }
 

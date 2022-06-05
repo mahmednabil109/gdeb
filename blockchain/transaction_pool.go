@@ -7,17 +7,17 @@ import (
 )
 
 type TransPool struct {
-	pool map[string]data.Transaction //key is transaction signature
+	pool map[string]*data.Transaction //key is transaction signature
 	mux  sync.Mutex
 }
 
 func NewTransPool() *TransPool {
 	return &TransPool{
-		pool: make(map[string]data.Transaction),
+		pool: make(map[string]*data.Transaction),
 	}
 }
 
-func (tp *TransPool) Add(t data.Transaction) {
+func (tp *TransPool) Add(t *data.Transaction) {
 	val := t.Signature
 	tp.mux.Lock()
 	defer tp.mux.Unlock()

@@ -13,6 +13,20 @@ type Block struct {
 	Signature         string        // signing all previous fields (proof that slot leader is who he claims to be)
 }
 
+func GenesisBlock(stakeDist map[string]float64) *Block {
+	stakeholders := make([]Stakeholder, len(stakeDist))
+	for pub, stake := range stakeDist {
+		sh := Stakeholder{PublicKey: pub, Stake: stake}
+		stakeholders = append(stakeholders, sh)
+	}
+
+	return &Block{
+		Slot:              1,
+		StakeDistribution: stakeholders,
+		Nonce:             "RANDOM_NONCE",
+	}
+}
+
 func (b *Block) Add(t Transaction) {
 	b.Transactions = append(b.Transactions, t)
 }

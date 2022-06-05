@@ -27,8 +27,7 @@ var (
 
 func setup() {
 	config := config.New()
-	pk := config.NodeKey()
-	privateKey = pk
+	privateKey = config.NodeKey()
 
 	dist := make(map[string]float64)
 	data.LoadStakeDist("stakeDistribution.json", &dist)
@@ -49,7 +48,7 @@ func main() {
 	setup()
 
 	// suggestion to set up communication/ pass channels between different modules
-	// cons := consensus.New(&communNetwCons, &stakeDist)
+	// cons := consensus.New(&communNetwCons, &stakeDist, privateKey)
 	// netw := network.New(&communNetwCons)
 
 	//code snippet to test ValidateLeader function
