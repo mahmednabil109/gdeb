@@ -53,6 +53,7 @@ func GenesisBlock(stakeDist map[string]float64) *Block {
 	}
 
 	return &Block{
+		PreviousHash:      "RANDOM_PREVIOUS_HASH",
 		Slot:              1,
 		StakeDistribution: stakeholders,
 		Nonce:             "RANDOM_NONCE",

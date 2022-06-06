@@ -3,6 +3,8 @@ bin
 **/.ipynb_checkpoints
 **__debug_bin
 **/*.log
+**/node_modules
+/privates
 
 .idea
 VM/TryGO.go

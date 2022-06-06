@@ -4,11 +4,13 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/mahmednabil109/gdeb/blockchain"
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/data"
 	"github.com/yoseplee/vrf"
-	"time"
 )
 
 const (
@@ -43,10 +45,15 @@ func New(c *communication.CommunNetwCons, stakeDist *blockchain.StakeDistributio
 	}
 }
 
-func (c *Consensus) sendTransaction(t data.Transaction) {
-	if c.validTrans(&t) {
-		c.ChanConsTransaction <- t
-	}
+// validate without the sign
+func (c *Consensus) SendTransaction(t data.Transaction) {
+	// if c.validTrans(&t) {
+	log.Print("valid transaction")
+	t.Sign(c.PrivateKey)
+	c.ChanConsTransaction <- t
+	// } else {
+	// log.Print("invalid transaction")
+	// }
 }
 
 func (c *Consensus) CreateBlock() {
@@ -57,6 +64,12 @@ func (c *Consensus) CreateBlock() {
 	if !valid {
 		return
 	}
+	transactions := c.TransactionsForBlock()
+	if transactions == nil {
+		return
+	}
+
+	log.Print("start mining")
 
 	block := data.Block{
 		PreviousHash: c.Blockchain.GetPrevHash(),
@@ -64,7 +77,7 @@ func (c *Consensus) CreateBlock() {
 		VrfOutput:    hex.EncodeToString(vrf.Hash(proof)),
 		VrfProof:     hex.EncodeToString(proof),
 		SlotLeader:   hex.EncodeToString(c.PrivateKey.Public().(ed25519.PublicKey)),
-		Transactions: c.TransactionsForBlock(), //get from transaction pool and update it
+		Transactions: transactions, //get from transaction pool and update it
 	}
 	//adds signature field to block
 	block.Sign(c.PrivateKey)
@@ -113,8 +126,12 @@ func (c *Consensus) TransactionsForBlock() []data.Transaction {
 	tp.Mux.Lock()
 	defer tp.Mux.Unlock()
 
+	if len(tp.Pool) == 0 {
+		return nil
+	}
+
 	counter := 0
-	transactions := make([]data.Transaction, transCount)
+	transactions := make([]data.Transaction, 0, transCount)
 	moneySum := make(map[string]float64)
 
 	for _, t := range tp.Pool {
@@ -135,6 +152,9 @@ func (c *Consensus) TransactionsForBlock() []data.Transaction {
 		}
 
 	}
+	if len(transactions) == 0 {
+		return nil
+	}
 
 	return transactions
 }
@@ -147,15 +167,22 @@ func (c *Consensus) Init() error {
 			case b := <-c.ChanNetBlock:
 				go func() {
 					//validate block & append if valid (leader and fields correct)
+					log.Printf("consensus: recieved block %+v", b)
 					if c.validBlock(&b) {
 						c.updateChain(&b)
+					} else {
+						log.Print("block is not valid")
+
 					}
 				}()
 			case t := <-c.ChanNetTransaction:
 				go func() {
 					//validate transaction & append if valid (fields & money in blockchain)
+					log.Printf("consensus: recieved transaction %+v", t)
 					if c.validTrans(&t) {
 						c.TransPool.Add(&t)
+					} else {
+						log.Print("transaction is not valid")
 					}
 				}()
 			}
@@ -170,7 +197,7 @@ func (c *Consensus) Init() error {
 			case <-ticker.C:
 				// check if leader
 				//    --> if yes, create block from transPool and send it to network
-				c.CreateBlock()
+				go c.CreateBlock()
 			case <-quit:
 				ticker.Stop()
 				return

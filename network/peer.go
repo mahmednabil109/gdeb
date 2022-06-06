@@ -51,7 +51,7 @@ func (p *Peer) InitConnection() error {
 	p.conn = conn
 
 	p.kc = pd.NewKoordeClient(p.conn)
-	log.Printf("connection Done With %s", p.NetAddr.String())
+	// log.Printf("connection Done With %s", p.NetAddr.String())
 	return nil
 }
 

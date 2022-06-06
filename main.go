@@ -1,68 +1,68 @@
 package main
 
 import (
+	"context"
 	"crypto/ed25519"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"log"
+	"math/rand"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/mahmednabil109/gdeb/blockchain"
-	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/config"
-	"github.com/mahmednabil109/gdeb/consensus"
 	"github.com/mahmednabil109/gdeb/data"
-	"github.com/yoseplee/vrf"
-)
-
-const (
-	totalCoins = 1000
+	"github.com/mahmednabil109/gdeb/node"
 )
 
 var (
-	stakeDist         blockchain.StakeDistribution
-	deployedContracts []string
-	privateKey        ed25519.PrivateKey
-	communNetwCons    communication.CommunNetwCons
+	PORT      = flag.Int("port", 8080, "port")
+	FIRST     = flag.Int("first", 1, "flag to mark the node as the first in the network")
+	BOOTSTRAP = flag.String("bootstrap", "127.0.0.1:16585", "ip for bootstraping node")
+	PK        = flag.Int("pk", 0, "pk")
+	Send      = flag.Int("send", 0, "send transaction")
 )
 
-func setup() {
-	config := config.New()
-	privateKey = config.NodeKey()
-
-	dist := make(map[string]float64)
-	data.LoadStakeDist("stakeDistribution.json", &dist)
-	stakeDist = blockchain.NewStakeDist(totalCoins, dist)
-
-	communNetwCons = communication.CommunNetwCons{
-		ChanNetBlock:        make(chan data.Block),
-		ChanNetTransaction:  make(chan data.Transaction),
-		ChanConsBlock:       make(chan data.Block),
-		ChanConsTransaction: make(chan data.Transaction),
-	}
-
-	//same behavior but for deployed contracts, useful for transactions the execute a contract (contract should exist to begin with)
-	// data.LoadContracts("deployedContracts.json", &deployedContracts)
-}
-
 func main() {
-	setup()
+	flag.Parse()
 
-	// suggestion to set up communication/ pass channels between different modules
-	// cons := consensus.New(&communNetwCons, &stakeDist, privateKey)
-	// netw := network.New(&communNetwCons)
+	config := config.New(*PK)
+	node := node.New(config)
 
-	//code snippet to test ValidateLeader function
-	PublicKey, _ := hex.DecodeString("bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
-	PrivateKey, _ := hex.DecodeString("e70b0983a423db62605c527109306d67e16a69d2f4d6641183242e1eac462d27bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0")
-	pub := "bd92fd2c61027f602170bf9f6608bc80cabc2f6e6834824fa67dc7fc745cbfe0"
-	nonce := "053464"
-	vrf_input := []byte(fmt.Sprintf("%d%s", 1, nonce))
-	proofBytes, _, err := vrf.Prove(PublicKey, PrivateKey, vrf_input)
-	proof := hex.EncodeToString(proofBytes)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "port", *PORT)
+	ctx = context.WithValue(ctx, "first", *FIRST)
+	ctx = context.WithValue(ctx, "bootstrap", *BOOTSTRAP)
+
+	f, err := os.Create(fmt.Sprintf("%d.log", *PORT))
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
-	val := consensus.ValidateLeader(1, nonce, pub, proof, &stakeDist)
-	log.Println(val)
+	defer f.Close()
+	log.SetOutput(f)
 
+	node.Init(ctx)
+
+	rand.Seed(time.Now().UnixNano())
+	if *Send == 1 {
+
+		go func() {
+			time.Sleep(2 * time.Second)
+			log.Print("start sending")
+			node.Consensus.SendTransaction(data.Transaction{
+				From:   hex.EncodeToString(node.Consensus.PrivateKey.Public().(ed25519.PublicKey)),
+				To:     "eb71de478e31020245677e9c4dab62200ce59dd8b45fd0462673822f73f807d0",
+				Amount: uint64(rand.Intn(10)),
+				Nonce:  uint64(rand.Intn(10)),
+			})
+		}()
+	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT)
+
+	<-sig
 }

@@ -73,9 +73,11 @@ func (ln *Node) Init(port int) error {
 			select {
 			case b := <-ln.ChanConsBlock:
 				go func() {
+					log.Print("recieved block")
 					ln.BroadCast(b)
 				}()
 			case t := <-ln.ChanConsTransaction:
+				log.Print("recieved transaction")
 				go func() {
 					ln.BroadCast(t)
 				}()
@@ -91,6 +93,7 @@ func (ln *Node) Init(port int) error {
 			select {
 			case <-ticker.C:
 				ln.stablize()
+				// log.Printf("%v, %v", ln.Successor, ln.D)
 			case <-ln.NodeShutdown:
 				ticker.Stop()
 				return
@@ -161,7 +164,7 @@ func (ln *Node) Join(nodeAddr *net.TCPAddr, port int) error {
 
 func (ln *Node) Lookup(k ID) (*Peer, error) {
 	kShift, i := select_imaginary_node(k, ln.NodeAddr, ln.Successor.NodeAddr)
-	log.Printf("init %s %s %s", k.String(), kShift.String(), i.String())
+	// log.Printf("init %s %s %s", k.String(), kShift.String(), i.String())
 
 	lookupPacket := &rpc.LookupPacket{
 		SrcId:  ln.NodeAddr.String(),
@@ -186,9 +189,12 @@ func (ln *Node) BroadCast(thing interface{}) error {
 		BPacket.Type = rpc.PacketType_BlockT
 		BPacket.Block = form_block_packet(&b)
 	case data.Transaction:
+		log.Print("broadcasting transaction!!")
 		BPacket.Type = rpc.PacketType_TransT
 		BPacket.Trans = form_trans_packet(&b)
 	}
+
+	log.Printf("init broadcasting of %+v", BPacket)
 
 	// start the braodcast
 	if !ln.Successor.NodeAddr.Equal(ln.D.NodeAddr) {
@@ -400,7 +406,7 @@ func (ln *Node) LookupRPC(bctx context.Context, lookupPacket *rpc.LookupPacket) 
 		return form_peer_packet(ln.Successor), nil
 	}
 
-	log.Printf("second %s in (%s %s] %v !!", i, ln.NodeAddr, ln.Successor.NodeAddr, i.InLXRange(ln.NodeAddr, ln.Successor.NodeAddr))
+	// log.Printf("second %s in (%s %s] %v !!", i, ln.NodeAddr, ln.Successor.NodeAddr, i.InLXRange(ln.NodeAddr, ln.Successor.NodeAddr))
 
 	if ln.D != nil && i.InLXRange(ln.NodeAddr, ln.Successor.NodeAddr) {
 
@@ -512,11 +518,14 @@ func (ln *Node) NotifyRPC(ctx context.Context, p *rpc.PeerPacket) (*rpc.Empty, e
 
 func (ln *Node) BroadCastRPC(ctx context.Context, b *rpc.BroadCastPacket) (*rpc.Empty, error) {
 	// notify the consensus code
+	log.Printf("recieved somthing %+v", b.Type)
 	go func() {
 		switch b.Type {
 		case rpc.PacketType_BlockT:
+			log.Print("recieved block")
 			ln.ChanNetBlock <- *parse_block_packet(b.Block)
 		case rpc.PacketType_TransT:
+			log.Print("recieved transaction")
 			ln.ChanNetTransaction <- *parse_transaction_packet(b.Trans)
 		}
 	}()

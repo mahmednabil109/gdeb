@@ -10,15 +10,16 @@ import (
 	"strings"
 )
 
-const (
-	DirPrivateKey = "/home/husseljo/gdeb/private_key"
-)
+// const (
+// 	DirPrivateKey = "/home/husseljo/gdeb/private_key"
+// )
 
 type Config struct {
 	DataDir string
 }
 
-func New() *Config {
+func New(pos int) *Config {
+	DirPrivateKey := fmt.Sprintf("./privates/pk-%d", pos)
 	return &Config{
 		DirPrivateKey,
 	}
