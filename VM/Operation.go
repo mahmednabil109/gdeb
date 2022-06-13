@@ -6,6 +6,7 @@ import (
 	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
 	"github.com/mahmednabil109/gdeb/Messages"
 	"github.com/mahmednabil109/gdeb/VM/DataTypes"
+	"github.com/mahmednabil109/gdeb/data"
 	"log"
 	"strconv"
 	"time"
@@ -659,8 +660,8 @@ func Transfer(interpreter *Interpreter) error {
 	stack := interpreter.state.Stack
 	money := stack.Pop()
 	fmt.Println()
-	a := stack.Pop().Data.ToString()
 	b := stack.Pop().Data.ToString()
+	a := stack.Pop().Data.ToString()
 	fmt.Println(a)
 	fmt.Println(b)
 
@@ -677,8 +678,17 @@ func Transfer(interpreter *Interpreter) error {
 	//	ADDRESS2: add2,
 	//	Money:    money.Data.ToInt64(),
 	//}
-	log.Println("Transfer", money.Data.ToInt64(), "from", b, " to ", a)
-	fmt.Println("Transfer", money.Data.ToInt64(), "from", b, " to ", a)
+	interpreter.TransactionChan <- data.Transaction{
+		Amount:      money.Data.ToInt64(),
+		From:        a,
+		To:          b,
+		ConsumedGas: interpreter.state.consumedGas,
+		Timestamp:   time.Now().String(),
+	}
+
+	interpreter.state.consumedGas = 0
+	log.Println("Transfer", money.Data.ToInt64(), "from", a, " to ", b)
+	fmt.Println("Transfer", money.Data.ToInt64(), "from", a, " to ", b)
 	if interpreter.IsTimeDependent {
 		interpreter.IsBlocked = true
 	}

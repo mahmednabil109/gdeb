@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/mahmednabil109/gdeb/Listeners/OracleListener"
 	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
@@ -53,7 +54,13 @@ func NewInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool
 // Run TODO when error happens --> unsubscribe from the oraclePool
 func (interpreter *Interpreter) Run() error {
 	//defer (close channel ya shetewi)
-
+	defer close(interpreter.TransactionChan)
+	defer func() {
+		interpreter.TransactionChan <- data.Transaction{
+			ConsumedGas: interpreter.state.consumedGas,
+			Timestamp:   time.Now().String(),
+		}
+	}()
 	for {
 
 		consumedGas, pc := &interpreter.state.consumedGas, &interpreter.state.pc

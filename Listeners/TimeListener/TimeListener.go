@@ -19,12 +19,6 @@ const (
 	EveryMinute Frequency = 6
 )
 
-//type PeriodicExecution struct {
-//	StartTime         time.TimeArr
-//	Frequency         Frequency
-//	ExecutionInterval time.Duration // in minutes
-//}
-
 type SubscribeMsg struct {
 	Id            int
 	TimeArr       []byte
