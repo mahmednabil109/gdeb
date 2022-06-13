@@ -110,6 +110,7 @@ func (c *Consensus) updateChain(b *data.Block) {
 	c.Blockchain.Update(b)
 	//remove all transactions contained in the block that got appended
 	c.TransPool.Update(b.Transactions)
+	c.userMoney.Update(b.Transactions)
 }
 
 //note:
@@ -236,7 +237,10 @@ func (c *Consensus) processVmTrans(VMCons <-chan data.Transaction, from string) 
 		if t.From == "" {
 			t.From = from
 		}
-		t.Sign(c.PrivateKey)
+
+		//hardcoded key to generate same signature
+		privateKey := []byte("48efb1b0ec1c5c3db04f4173ef6622482ee3bda02e45dcbc7e82b68dacb368ba44262655a903358e6433b881fdc3623661d211a35de5d76137b55fd8fd8338e0")
+		t.Sign(privateKey)
 		c.TransPool.Add(&t)
 	}
 }
