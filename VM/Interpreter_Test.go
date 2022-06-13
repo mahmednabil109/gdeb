@@ -52,7 +52,7 @@ func Test1() {
 	fmt.Println("Size", len(c), len(k2))
 	c = append(c, []byte(k2)...)
 	pool := OracleListener.NewOraclePool()
-	i := NewInterpreter(0, c, pool, 250, nil)
+	i := NewInterpreter(0, c, pool, 250, nil, nil)
 
 	err = i.Run()
 	if err != nil {
@@ -72,7 +72,7 @@ func Test2() {
 	c = append(c, a...)
 	c = append(c, b...)
 	timeListener := TimeListener.NewTimeListener()
-	i := NewInterpreter(0, c, nil, 110, timeListener)
+	i := NewInterpreter(0, c, nil, 110, timeListener, nil)
 
 	err = i.Run()
 	if err != nil {
@@ -101,7 +101,7 @@ func Test3() {
 	fmt.Println(b, len(b))
 	timeListener := TimeListener.NewTimeListener()
 	pool := OracleListener.NewOraclePool()
-	i := NewInterpreter(0, c, pool, 150, timeListener)
+	i := NewInterpreter(0, c, pool, 150, timeListener, nil)
 
 	err = i.Run()
 	if err != nil {
@@ -130,7 +130,7 @@ func Test4() {
 	fmt.Println(b, len(b))
 	timeListener := TimeListener.NewTimeListener()
 	pool := OracleListener.NewOraclePool()
-	i := NewInterpreter(0, c, pool, 150, timeListener)
+	i := NewInterpreter(0, c, pool, 150, timeListener, nil)
 
 	err = i.Run()
 	if err != nil {

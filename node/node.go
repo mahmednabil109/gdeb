@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/mahmednabil109/gdeb/Listeners/OracleListener"
+	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
 	"github.com/mahmednabil109/gdeb/blockchain"
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/config"
@@ -20,8 +22,10 @@ const (
 // full node
 type Node struct {
 	// VM isntance
-	Network   *network.Node
-	Consensus *consensus.Consensus
+	Network      *network.Node
+	Consensus    *consensus.Consensus
+	OraclePool   *OracleListener.OraclePool
+	TimeListener *TimeListener.TimeListener
 }
 
 func New(config *config.Config) *Node {
@@ -39,11 +43,18 @@ func New(config *config.Config) *Node {
 	data.LoadStakeDist("stakeDistribution.json", &dist)
 	stakeDist := blockchain.NewStakeDist(totalCoins, dist)
 
-	consensus := consensus.New(&NCComm, &stakeDist, privateKey)
+	oraclePool := OracleListener.NewOraclePool()
+	timeListener := TimeListener.NewTimeListener()
+
+	consensus := consensus.New(&NCComm, &stakeDist, privateKey, oraclePool, timeListener)
 	network := network.New(&NCComm)
+
+	//node technocally does not need oraclePool and timeListener
 	node := Node{
-		Network:   network,
-		Consensus: consensus,
+		Network:      network,
+		Consensus:    consensus,
+		OraclePool:   oraclePool,
+		TimeListener: timeListener,
 	}
 	return &node
 }

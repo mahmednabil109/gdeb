@@ -664,10 +664,14 @@ func Transfer(interpreter *Interpreter) error {
 	fmt.Println(a)
 	fmt.Println(b)
 
+	// Add ConsumedGas to Transaction as field in all cases (crashes or completes)
+	// reset ConsumedGas variable when new transaction sent to the channel
+	// keep track of global gas limit
 	//interpreter.TransactionChan <- struct {
 	//	ADDRESS1 string
 	//	ADDRESS2 string
 	//	Money    uint64
+	//  ConsumedGas unit64
 	//}{
 	//	ADDRESS1: add1,
 	//	ADDRESS2: add2,

@@ -7,6 +7,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/mahmednabil109/gdeb/Listeners/OracleListener"
+	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
+	"github.com/mahmednabil109/gdeb/VM"
 	"github.com/mahmednabil109/gdeb/blockchain"
 	"github.com/mahmednabil109/gdeb/communication"
 	"github.com/mahmednabil109/gdeb/data"
@@ -30,9 +33,12 @@ type Consensus struct {
 	TransPool           *blockchain.TransPool
 	epochNonce          string
 	PrivateKey          ed25519.PrivateKey
+	OraclePool          *OracleListener.OraclePool
+	TimeListener        *TimeListener.TimeListener
+	VmIdentifier        int
 }
 
-func New(c *communication.CommunNetwCons, stakeDist *blockchain.StakeDistribution, privateKey ed25519.PrivateKey) *Consensus {
+func New(c *communication.CommunNetwCons, stakeDist *blockchain.StakeDistribution, privateKey ed25519.PrivateKey, oraclePool *OracleListener.OraclePool, timeListener *TimeListener.TimeListener) *Consensus {
 	return &Consensus{ChanNetBlock: c.ChanNetBlock, ChanNetTransaction: c.ChanNetTransaction,
 		ChanConsBlock:       c.ChanConsBlock,
 		ChanConsTransaction: c.ChanConsTransaction,
@@ -42,6 +48,9 @@ func New(c *communication.CommunNetwCons, stakeDist *blockchain.StakeDistributio
 		TransPool:           blockchain.NewTransPool(),
 		PrivateKey:          privateKey,
 		epochNonce:          "RANDOM_NONCE",
+		OraclePool:          oraclePool,
+		TimeListener:        timeListener,
+		VmIdentifier:        0,
 	}
 }
 
@@ -113,7 +122,7 @@ func (c *Consensus) validBlock(b *data.Block) bool {
 		return false
 	}
 	for _, t := range b.Transactions {
-		if t.ContractCode != nil {
+		if t.ConsumedGas != 0 { //aka field is empty
 			// TODO: verifiable VM
 			// skip validation of contract transaction for no
 			continue
@@ -187,14 +196,14 @@ func (c *Consensus) Init() error {
 					//validate transaction & append if valid (fields & money in blockchain)
 					log.Printf("consensus: recieved transaction %+v", t)
 					if c.validTrans(&t) {
-						if t.ContractCode == nil {
+						if t.ConsumedGas == 0 { //aka empty
 							c.TransPool.Add(&t)
 						} else {
-							// Interpreter stuf
-
-							// create channel and Interpreter instance
+							vmTransChan := make(chan data.Transaction)
+							interpreter := VM.NewInterpreter(c.VmIdentifier, t.ContractCode, c.OraclePool, t.GasLimit, c.TimeListener, vmTransChan)
+							go interpreter.Run()
+							go c.processVmTrans(vmTransChan)
 						}
-						//
 					} else {
 						log.Print("transaction is not valid")
 					}
@@ -221,11 +230,10 @@ func (c *Consensus) Init() error {
 	return nil
 }
 
-func (c *Consensus) readTransaction(VMCons <-chan data.Transaction) {
-	// sign
-	// add to pool
+func (c *Consensus) processVmTrans(VMCons <-chan data.Transaction) {
 
 	for t := range VMCons {
-		c.ChanConsTransaction <- t
+		t.Sign(c.PrivateKey)
+		c.TransPool.Add(&t)
 	}
 }

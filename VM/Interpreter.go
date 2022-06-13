@@ -21,7 +21,6 @@ type Interpreter struct {
 	OraclePool         *OracleListener.OraclePool
 	TimeListener       *TimeListener.TimeListener
 	ReceiveChan        chan *Messages.BroadcastMsg
-	TransactionChan    chan interface{}
 	getStatusChan      chan bool
 	jumpTable          *JumpTable
 	gasLimit           uint64
@@ -29,9 +28,10 @@ type Interpreter struct {
 	reservedIndex      []int
 	IsBlocked          bool
 	IsTimeDependent    bool
+	TransactionChan    chan<- data.Transaction
 }
 
-func NewInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool, gasLimit uint64, timeListener *TimeListener.TimeListener, ConsChan chan<- data.Transaction) *Interpreter {
+func NewInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool, gasLimit uint64, timeListener *TimeListener.TimeListener, transactionChan chan<- data.Transaction) *Interpreter {
 	// Write result on ConsChan
 	return &Interpreter{
 		Id:                 id,
@@ -40,7 +40,7 @@ func NewInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool
 		OraclePool:         pool,
 		TimeListener:       timeListener,
 		ReceiveChan:        make(chan *Messages.BroadcastMsg),
-		TransactionChan:    make(chan interface{}),
+		TransactionChan:    transactionChan,
 		getStatusChan:      make(chan bool),
 		jumpTable:          NewJumpTable(),
 		gasLimit:           gasLimit,
@@ -52,6 +52,7 @@ func NewInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool
 
 // Run TODO when error happens --> unsubscribe from the oraclePool
 func (interpreter *Interpreter) Run() error {
+	//defer (close channel ya shetewi)
 
 	for {
 

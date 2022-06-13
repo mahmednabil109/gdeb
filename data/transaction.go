@@ -15,6 +15,7 @@ type Transaction struct {
 	Timestamp       string
 	ContractCode    []byte
 	GasPrice        uint64
+	ConsumedGas     uint64
 	GasLimit        uint64
 	ContractAddress string // provides consent for smart contracts involving other users (otherwise empty)
 	Signature       string
