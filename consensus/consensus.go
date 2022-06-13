@@ -202,7 +202,7 @@ func (c *Consensus) Init() error {
 							vmTransChan := make(chan data.Transaction)
 							interpreter := VM.NewInterpreter(c.VmIdentifier, t.ContractCode, c.OraclePool, t.GasLimit, c.TimeListener, vmTransChan)
 							go interpreter.Run()
-							go c.processVmTrans(vmTransChan)
+							go c.processVmTrans(vmTransChan, t.From)
 						}
 					} else {
 						log.Print("transaction is not valid")
@@ -230,9 +230,12 @@ func (c *Consensus) Init() error {
 	return nil
 }
 
-func (c *Consensus) processVmTrans(VMCons <-chan data.Transaction) {
+func (c *Consensus) processVmTrans(VMCons <-chan data.Transaction, from string) {
 
 	for t := range VMCons {
+		if t.From == "" {
+			t.From = from
+		}
 		t.Sign(c.PrivateKey)
 		c.TransPool.Add(&t)
 	}
