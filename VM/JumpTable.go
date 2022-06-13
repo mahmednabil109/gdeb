@@ -21,7 +21,7 @@ const (
 
 type JumpTable [100]Operation
 
-func newJumpTable() *JumpTable {
+func NewJumpTable() *JumpTable {
 	var oppArray = new(JumpTable)
 	(*oppArray)[ADD] =
 		Operation{
@@ -42,13 +42,72 @@ func newJumpTable() *JumpTable {
 		gasPrice:       midGasPrice,
 		pcJump:         onePCJump,
 	}
-	(*oppArray)[DIV] = Operation{}
-	//(*oppArray)[GT] = Operation{
-	//	run:        GreaterOp,
-	//	stackArgsCount: 2,
-	//	gasPrice:       lowGasPrice,
-	//	pcJump:         onePCJump,
-	//}
+	(*oppArray)[DIV] = Operation{
+		execute:        DivOP,
+		stackArgsCount: 2,
+		gasPrice:       highGasPrice,
+		pcJump:         onePCJump,
+	}
+	(*oppArray)[GT] = Operation{
+		execute:        GreaterOp,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+	(*oppArray)[LT] = Operation{
+		execute:        LessOP,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+	(*oppArray)[GT_EQ] = Operation{
+		execute:        GTEQ_OP,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+	(*oppArray)[LT_EQ] = Operation{
+		execute:        LTEQ_OP,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+
+	(*oppArray)[SGT] = Operation{
+		execute:        SGreaterOP,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+
+	(*oppArray)[SLT] = Operation{
+		execute:        SLessOP,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+
+	(*oppArray)[EQ] = Operation{
+		execute:        EqOP,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+
+	(*oppArray)[ISZERO] = Operation{
+		execute:        IsZeroOp,
+		stackArgsCount: 1,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+
+	(*oppArray)[ISNEGATIVE] = Operation{
+		execute:        IsNegativeOp,
+		stackArgsCount: 1,
+		gasPrice:       lowGasPrice,
+		pcJump:         onePCJump,
+	}
+
 	(*oppArray)[OR] = Operation{
 		execute:        OrOP,
 		stackArgsCount: 2,
@@ -69,7 +128,7 @@ func newJumpTable() *JumpTable {
 	}
 	(*oppArray)[NOT] = Operation{
 		execute:        NotOP,
-		stackArgsCount: 2,
+		stackArgsCount: 1,
 		gasPrice:       lowGasPrice,
 		pcJump:         onePCJump,
 	}
@@ -92,10 +151,15 @@ func newJumpTable() *JumpTable {
 		gasPrice:       lowGasPrice,
 		pcJump:         0,
 	}
-
+	(*oppArray)[AddToPC] = Operation{
+		execute:        AddToPCOp,
+		stackArgsCount: 1,
+		gasPrice:       lowGasPrice,
+		pcJump:         0,
+	}
 	(*oppArray)[SUBSCRIBE] = Operation{
 		execute:        SubscribeOp,
-		stackArgsCount: 4,
+		stackArgsCount: 6,
 		gasPrice:       highGasPrice,
 		pcJump:         onePCJump,
 	}
@@ -118,7 +182,7 @@ func newJumpTable() *JumpTable {
 		execute:        PushOp,
 		stackArgsCount: 0,
 		gasPrice:       lowGasPrice,
-		codeArgsCount:  7,
+		codeArgsCount:  6,
 		pcJump:         0,
 	}
 	(*oppArray)[PUSH64] = Operation{
@@ -135,6 +199,47 @@ func newJumpTable() *JumpTable {
 		codeArgsCount:  32,
 		pcJump:         0,
 	}
+	(*oppArray)[PUSHSTRING] = Operation{
+		execute:        PushStringOp,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		codeArgsCount:  0,
+		pcJump:         1,
+	}
+
+	(*oppArray)[LOAD] = Operation{
+		execute:        LoadOp,
+		stackArgsCount: 1,
+		gasPrice:       lowGasPrice,
+		pcJump:         1,
+	}
+	(*oppArray)[STORE] = Operation{
+		execute:        StoreOp,
+		stackArgsCount: 2,
+		gasPrice:       lowGasPrice,
+		pcJump:         1,
+	}
+
+	(*oppArray)[EXECUTEPERIODICALLY] = Operation{
+		execute:        ExecutePeriodicallyOp,
+		stackArgsCount: 3,
+		gasPrice:       midGasPrice,
+		pcJump:         1,
+	}
+
+	(*oppArray)[WAIT_FOR_DATA] = Operation{
+		execute:        WaitOp,
+		stackArgsCount: 0,
+		gasPrice:       highGasPrice,
+		pcJump:         1,
+	}
+	(*oppArray)[TRANSFER] = Operation{
+		execute:        Transfer,
+		stackArgsCount: 3,
+		gasPrice:       highGasPrice,
+		pcJump:         1,
+	}
+
 	return oppArray
 }
 

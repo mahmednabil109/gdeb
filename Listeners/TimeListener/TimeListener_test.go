@@ -33,7 +33,7 @@ func TestNewTimeListener(t *testing.T) {
 		trackWg++
 		receiveChan := make(chan *Messages.BroadcastMsg)
 		sub := &SubscribeMsg{
-			Time:         timeSlice[i],
+			TimeArr:      timeSlice[i],
 			ResponseChan: receiveChan,
 			Idx:          i,
 			Id:           i,

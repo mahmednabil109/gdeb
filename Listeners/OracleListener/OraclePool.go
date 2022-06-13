@@ -2,6 +2,7 @@ package OracleListener
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/mahmednabil109/gdeb/Messages"
 	"log"
@@ -22,7 +23,7 @@ type OraclePool struct {
 func NewOraclePool() *OraclePool {
 
 	pool := &OraclePool{
-		Connections:     map[string]*SafeConnection{},
+		Connections:     make(map[string]*SafeConnection, 0),
 		mutex:           sync.Mutex{},
 		SubscribeChan:   make(chan *Messages.SubscribeMsg),
 		UnsubscribeChan: make(chan *Messages.UnsubscribeMsg),
@@ -48,28 +49,18 @@ func (pool *OraclePool) IsSubscribed(id int) bool {
 }
 
 func (pool *OraclePool) unsubscribeListener() {
-	log.Println("Initiated unsub listener!!")
-	defer log.Println("Exit Listener")
 	for {
 		select {
 		case msg := <-pool.UnsubscribeChan:
-			log.Println("Received unsubMsg from:", msg.VM)
 			vmId := msg.VM
-
 			topics := pool.Subscribers[vmId]
-
 			for _, topic := range topics {
-				safeConn := pool.Connections[topic.Url]
+				pool.mutex.Lock()
+				safeConn := pool.Connections[topic.OracleKey]
 				safeConn.decCount()
-				if safeConn.Count == 0 {
-					safeConn.close()
-				}
+				pool.mutex.Unlock()
 			}
-
-			log.Println("Current Connections:", pool.Connections)
-			for _, v := range pool.Connections {
-				log.Println(v.Count)
-			}
+			pool.unsubscribeVM(vmId)
 		}
 	}
 }
@@ -84,27 +75,26 @@ func (pool *OraclePool) addConnection(topic string, conn *SafeConnection) {
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	pool.Connections[topic] = conn
+	fmt.Println("Connnnnection", conn)
 }
 
 func (pool *OraclePool) getConnection(oracleUrl, topic string) (*SafeConnection, error) {
 
 	if conn, isOk := pool.Connections[topic]; isOk {
-		conn.incCount()
+		pool.Connections[topic].incCount()
 		return conn, nil
 	}
 	u := url.URL{Scheme: "ws", Host: oracleUrl, Path: "sub"}
 
-	log.Println("Started to connect to", u.String())
-	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	log.Println("Connected to", u.String())
+	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Println(err)
 		return nil, errors.New("no such Oracle")
 	}
 
 	newConn := &SafeConnection{
 		Url:   oracleUrl,
-		conn:  connection,
+		Conn:  connection,
 		Count: 1,
 		mutex: sync.Mutex{},
 	}
@@ -116,12 +106,12 @@ func (pool *OraclePool) getConnection(oracleUrl, topic string) (*SafeConnection,
 }
 
 func (pool *OraclePool) messageReceiver(safeConn *SafeConnection) {
-	conn := safeConn.conn
+	conn := safeConn.Conn
 	for {
 		var res Messages.OracleMsg
 		err := conn.ReadJSON(&res)
 		if err != nil {
-			log.Println("Close: " + err.Error())
+			fmt.Println("Close: " + err.Error())
 			break
 		} else {
 			pool.broadcast(res)
@@ -130,7 +120,6 @@ func (pool *OraclePool) messageReceiver(safeConn *SafeConnection) {
 }
 
 func (pool *OraclePool) broadcast(msg Messages.OracleMsg) {
-	log.Println("Start Broadcast")
 
 	for _, v := range pool.Subscribers {
 		for _, subscribeMsg := range v {
@@ -145,7 +134,6 @@ func (pool *OraclePool) broadcast(msg Messages.OracleMsg) {
 				}
 			}
 		}
-
 	}
 }
 
@@ -154,9 +142,8 @@ func (pool *OraclePool) addSubscriber(subMsg *Messages.SubscribeMsg) {
 	defer pool.mutex.Unlock()
 
 	id := subMsg.VmId
-
 	if topics, isOk := pool.Subscribers[id]; isOk {
-		topics = append(topics, subMsg)
+		pool.Subscribers[id] = append(pool.Subscribers[id], subMsg)
 	} else {
 		topics = make([]*Messages.SubscribeMsg, 0)
 		topics = append(topics, subMsg)
@@ -165,6 +152,7 @@ func (pool *OraclePool) addSubscriber(subMsg *Messages.SubscribeMsg) {
 }
 
 func (pool *OraclePool) subscribeListener() {
+	fmt.Println("Launched the subscribe listener")
 	for {
 		select {
 		case sub := <-pool.SubscribeChan:
@@ -172,10 +160,10 @@ func (pool *OraclePool) subscribeListener() {
 			safeConn, err := pool.getConnection(sub.Url, sub.OracleKey)
 			if err != nil {
 				sub.BroadcastChan <- &Messages.BroadcastMsg{Error: true}
+				fmt.Println("Error")
+				return
 			}
-
 			err = safeConn.writeMsg(sub.OracleKey) // sending message to oracle server
-
 			if err != nil {
 				log.Println(err)
 			}

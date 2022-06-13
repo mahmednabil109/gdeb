@@ -1,6 +1,7 @@
 package OracleListener
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/mahmednabil109/gdeb/Messages"
 	"log"
@@ -9,7 +10,7 @@ import (
 
 type SafeConnection struct {
 	Url   string
-	conn  *websocket.Conn
+	Conn  *websocket.Conn
 	Count int
 	mutex sync.Mutex
 }
@@ -18,7 +19,7 @@ func (conn *SafeConnection) writeMsg(message string) error {
 
 	conn.mutex.Lock()
 	defer conn.mutex.Unlock()
-	err := conn.conn.WriteMessage(websocket.TextMessage, []byte(message))
+	err := conn.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 
 	if err != nil {
 		log.Println(err)
@@ -31,7 +32,7 @@ func (conn *SafeConnection) readMessage() (*Messages.BroadcastMsg, error) {
 	var response *Messages.BroadcastMsg
 	conn.mutex.Lock()
 	defer conn.mutex.Unlock()
-	err := conn.conn.ReadJSON(response)
+	err := conn.Conn.ReadJSON(response)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +48,8 @@ func (conn *SafeConnection) incCount() {
 func (conn *SafeConnection) close() {
 	conn.mutex.Lock()
 	defer conn.mutex.Unlock()
-	err := conn.conn.Close()
+	err := conn.Conn.Close()
+	fmt.Println("Close!!!!!!!")
 	if err != nil {
 		log.Println("Error in closing Safe Conn:", err)
 		return
@@ -55,9 +57,14 @@ func (conn *SafeConnection) close() {
 }
 
 func (conn *SafeConnection) decCount() {
+
 	conn.mutex.Lock()
 	defer conn.mutex.Unlock()
 	if conn.Count > 0 {
 		conn.Count--
 	}
+	if conn.Count == 0 {
+		conn.close()
+	}
+
 }

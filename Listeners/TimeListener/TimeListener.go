@@ -1,7 +1,8 @@
 package TimeListener
 
 import (
-	"github.com/mahmednabil109/gdeb/Messages"
+	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -9,20 +10,27 @@ import (
 type Frequency byte
 
 const (
-	ONCE    Frequency = 0
-	HOURLY  Frequency = 1
-	DAILY   Frequency = 2
-	WEEKLY  Frequency = 3
-	MONTHLY Frequency = 4
-	YEARLY  Frequency = 5
+	ONCE        Frequency = 0
+	HOURLY      Frequency = 1
+	DAILY       Frequency = 2
+	WEEKLY      Frequency = 3
+	MONTHLY     Frequency = 4
+	YEARLY      Frequency = 5
+	EveryMinute Frequency = 6
 )
 
+//type PeriodicExecution struct {
+//	StartTime         time.TimeArr
+//	Frequency         Frequency
+//	ExecutionInterval time.Duration // in minutes
+//}
+
 type SubscribeMsg struct {
-	Id           int
-	Time         []byte
-	Frequency    Frequency
-	ResponseChan chan *Messages.BroadcastMsg
-	Idx          int
+	Id            int
+	TimeArr       []byte
+	Frequency     Frequency
+	Interval      time.Duration
+	GetStatusChan chan bool
 }
 
 type UnsubscribeMsg struct {
@@ -30,24 +38,23 @@ type UnsubscribeMsg struct {
 }
 
 type subscriber struct {
-	Time         *time.Time
-	Frequency    Frequency
-	ResponseChan chan *Messages.BroadcastMsg
-	Idx          int
+	startTime *time.Time
+	isBlocked bool
+	*SubscribeMsg
 }
 
 type TimeListener struct {
-	Subscribers     map[int][]*subscriber
+	Subscribers     []*subscriber
 	subscribeChan   chan *SubscribeMsg
-	unsubscribeChan chan *UnsubscribeMsg
+	unsubscribeChan chan int
 	mutex           sync.Mutex
 }
 
 func NewTimeListener() *TimeListener {
 	timeListener := &TimeListener{
-		Subscribers:     make(map[int][]*subscriber),
+		Subscribers:     make([]*subscriber, 0),
 		subscribeChan:   make(chan *SubscribeMsg, 5),
-		unsubscribeChan: make(chan *UnsubscribeMsg, 5),
+		unsubscribeChan: make(chan int, 5),
 	}
 	go timeListener.handleSubscribe()
 	go timeListener.handleUnsubscribe()
@@ -60,24 +67,31 @@ func (listener *TimeListener) Subscribe(msg *SubscribeMsg) {
 	listener.subscribeChan <- msg
 }
 
+func (listener *TimeListener) Unsubscribe(id int) {
+	listener.unsubscribeChan <- id
+}
+
 func (listener *TimeListener) handleSubscribe() {
 	for {
 		select {
 		case msg := <-listener.subscribeChan:
-			id := msg.Id
+			msg.Interval = time.Second * 10
+			now := time.Now()
+			var startTime time.Time
+			fmt.Println("Now", now.String(), "Contract code", *arrToTime(msg.TimeArr))
+			if now.After(*arrToTime(msg.TimeArr)) {
+				startTime = now
+			} else {
+				startTime = *arrToTime(msg.TimeArr)
+			}
+
 			newSubscriber := &subscriber{
-				Idx:          msg.Idx,
-				Time:         arrToTime(msg.Time),
-				ResponseChan: msg.ResponseChan,
-				Frequency:    msg.Frequency,
+				SubscribeMsg: msg,
+				startTime:    &startTime,
+				isBlocked:    true,
 			}
 			listener.mutex.Lock()
-			if list, isOk := listener.Subscribers[id]; isOk {
-				list = append(list, newSubscriber)
-			} else {
-				listener.Subscribers[id] = make([]*subscriber, 0)
-				listener.Subscribers[id] = append(listener.Subscribers[id], newSubscriber)
-			}
+			listener.Subscribers = append(listener.Subscribers, newSubscriber)
 			listener.mutex.Unlock()
 		}
 	}
@@ -87,10 +101,13 @@ func (listener *TimeListener) handleUnsubscribe() {
 	for {
 		select {
 		case msg := <-listener.unsubscribeChan:
-			id := msg.Id
+			id := msg
 			listener.mutex.Lock()
-			if _, isOk := listener.Subscribers[id]; isOk {
-				delete(listener.Subscribers, id)
+			for i, v := range listener.Subscribers {
+				if v.Id == id {
+					listener.Subscribers = append(listener.Subscribers[:i], listener.Subscribers[i+1:]...)
+					break
+				}
 			}
 			listener.mutex.Unlock()
 		}
@@ -99,41 +116,35 @@ func (listener *TimeListener) handleUnsubscribe() {
 
 func (listener *TimeListener) handlePublishing() {
 	for {
-		for k, list := range listener.Subscribers {
-			toBeRemoved := make([]int, 0)
-			listener.mutex.Lock()
-			for i, v := range list {
-				if time.Now().UTC().After(*v.Time) || time.Now().UTC().Equal(*v.Time) {
-					if v.Frequency == ONCE {
-						toBeRemoved = append(toBeRemoved, i)
-					} else {
-						*v.Time = nextTime(v.Frequency, *(v.Time))
-					}
-					v.ResponseChan <- &Messages.BroadcastMsg{
-						Type:      0,
-						Value:     []byte("OK"),
-						Key:       "Time",
-						Index:     v.Idx,
-						Error:     false,
-						Timestamp: time.Now().String(),
-					}
+		listener.mutex.Lock()
+		for _, v := range listener.Subscribers {
+			now := time.Now().UTC()
+			if v.isBlocked {
+				if now.After(*v.startTime) {
+					v.isBlocked = false
+					v.GetStatusChan <- false
+					fmt.Println("VM is now Free :)")
+					log.Println("VM is now Free :)")
+				}
+			} else {
+				if now.After((*v.startTime).Add(v.Interval)) {
+					v.isBlocked = true
+					v.GetStatusChan <- true
+					*v.startTime = getNextTime(v.Frequency, *v.startTime)
+					log.Println("VM is Blocked :(")
+					fmt.Println("VM is Blocked :(")
 				}
 			}
-			for _, i := range toBeRemoved {
-				list = removeFromSlice(list, i)
-			}
-			if len(list) == 0 {
-				delete(listener.Subscribers, k)
-			}
-			listener.mutex.Unlock()
-
 		}
-		time.Sleep(3 * time.Second)
+		listener.mutex.Unlock()
+		time.Sleep(time.Second)
 	}
 }
 
-func nextTime(frequency Frequency, now time.Time) time.Time {
+func getNextTime(frequency Frequency, now time.Time) time.Time {
 	switch frequency {
+	case EveryMinute:
+		return now.Add(60 * time.Second)
 	case HOURLY:
 		return now.Add(time.Hour)
 	case DAILY:
@@ -149,13 +160,8 @@ func nextTime(frequency Frequency, now time.Time) time.Time {
 	}
 }
 
-func removeFromSlice(s []*subscriber, i int) []*subscriber {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
-}
-
 func arrToTime(arr []byte) *time.Time {
 	var year = uint16(arr[1])<<8 + uint16(arr[0])
-	t := time.Date(int(year), time.Month(int(arr[2])), int(arr[3]), int(arr[4]), int(arr[5]), int(arr[6]), 0, time.UTC)
+	t := time.Date(int(year), time.Month(int(arr[2])), int(arr[3]), int(arr[4]), int(arr[5]), int(arr[6]), 0, time.Local)
 	return &t
 }

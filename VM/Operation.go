@@ -2,8 +2,11 @@ package VM
 
 import (
 	"errors"
+	"fmt"
+	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
 	"github.com/mahmednabil109/gdeb/Messages"
 	"github.com/mahmednabil109/gdeb/VM/DataTypes"
+	"log"
 	"strconv"
 	"time"
 )
@@ -62,9 +65,10 @@ func AddOP(interpreter *Interpreter) error {
 	}
 	c := a.Data.Add(b.Data)
 	result := &DataTypes.DataWord{
-		Data:     c,
+		Data:     c[0:len(a.Data)],
 		Datatype: a.Datatype,
 	}
+
 	stack.Push(result)
 
 	return nil
@@ -112,6 +116,30 @@ func MulOP(interpreter *Interpreter) error {
 	return nil
 }
 
+func DivOP(interpreter *Interpreter) error {
+	state := interpreter.state
+	stack := state.Stack
+
+	b := stack.Pop()
+	a := stack.Pop()
+
+	err := checkCompatability("DIV", a, b)
+	if err != nil {
+		return err
+	}
+	c, err := a.Data.Div(b.Data)
+	if err != nil {
+		return err
+	}
+	result := &DataTypes.DataWord{
+		Data:     c,
+		Datatype: a.Datatype,
+	}
+	stack.Push(result)
+
+	return nil
+}
+
 //GreaterOp Return 1 if a > b
 func GreaterOp(interpreter *Interpreter) error {
 	state := interpreter.state
@@ -126,7 +154,7 @@ func GreaterOp(interpreter *Interpreter) error {
 	}
 	isGreater := a.Data.GT(b.Data)
 
-	var result *DataTypes.DataWord
+	result := DataTypes.NewData(DataTypes.Boolean)
 
 	if isGreater {
 		result.Data[0] = 1
@@ -154,7 +182,7 @@ func LessOP(interpreter *Interpreter) error {
 	}
 	isLess := a.Data.LT(b.Data)
 
-	var result *DataTypes.DataWord
+	result := DataTypes.NewData(DataTypes.Boolean)
 
 	if isLess {
 		result.Data[0] = 1
@@ -182,7 +210,7 @@ func SGreaterOP(interpreter *Interpreter) error {
 	}
 	isGreater := a.Data.SGT(b.Data)
 
-	var result *DataTypes.DataWord
+	result := DataTypes.NewData(DataTypes.Boolean)
 
 	if isGreater {
 		result.Data[0] = 1
@@ -210,7 +238,7 @@ func SLessOP(interpreter *Interpreter) error {
 	}
 	isLess := a.Data.SLT(b.Data)
 
-	var result *DataTypes.DataWord
+	result := DataTypes.NewData(DataTypes.Boolean)
 
 	if isLess {
 		result.Data[0] = 1
@@ -238,7 +266,7 @@ func GTEQ_OP(interpreter *Interpreter) error {
 	}
 	isGTEQ := a.Data.GT(b.Data) || a.Data.Eq(b.Data)
 
-	var result *DataTypes.DataWord
+	result := DataTypes.NewData(DataTypes.Boolean)
 
 	if isGTEQ {
 		result.Data[0] = 1
@@ -266,7 +294,7 @@ func LTEQ_OP(interpreter *Interpreter) error {
 	}
 	isLTEQ := a.Data.LT(b.Data) || a.Data.Eq(b.Data)
 
-	var result *DataTypes.DataWord
+	result := DataTypes.NewData(DataTypes.Boolean)
 
 	if isLTEQ {
 		result.Data[0] = 1
@@ -294,7 +322,7 @@ func EqOP(interpreter *Interpreter) error {
 	}
 	isEQ := a.Data.Eq(b.Data)
 
-	var result *DataTypes.DataWord
+	result := DataTypes.NewData(DataTypes.Boolean)
 
 	if isEQ {
 		result.Data[0] = 1
@@ -380,10 +408,53 @@ func NotOP(interpreter *Interpreter) error {
 		return errors.New("cannot perform not on " + strconv.Itoa(int(a.Datatype)))
 	}
 	c := a.Data.Not()
+	if a.Datatype == DataTypes.Boolean {
+		c = DataTypes.NewExtraBigInt(1)
+		if a.Data[0] == 0 {
+			c[0] = 1
+		} else {
+			c[0] = 0
+		}
+	}
 	result := &DataTypes.DataWord{
 		Data:     c,
 		Datatype: a.Datatype,
 	}
+	stack.Push(result)
+	return nil
+}
+func IsZeroOp(interpreter *Interpreter) error {
+	state := interpreter.state
+	stack := state.Stack
+
+	a := stack.Pop()
+	if a.Datatype == DataTypes.String || a.Datatype == DataTypes.Time {
+		return errors.New("cannot perform not on " + strconv.Itoa(int(a.Datatype)))
+	}
+	c := a.Data.IsZero()
+	d := DataTypes.NewData(DataTypes.Boolean)
+	if c == true {
+		d.Data[0] = 1
+	}
+	result := d
+	stack.Push(result)
+	return nil
+}
+
+func IsNegativeOp(interpreter *Interpreter) error {
+	state := interpreter.state
+	stack := state.Stack
+
+	a := stack.Pop()
+	if a.Datatype == DataTypes.String || a.Datatype == DataTypes.Time {
+		return errors.New("cannot perform not on " + strconv.Itoa(int(a.Datatype)))
+	}
+	c := a.Data.Sign()
+	d := DataTypes.NewData(DataTypes.Boolean)
+	if c == 1 {
+		d.Data[0] = 1
+	}
+	result := d
 	stack.Push(result)
 	return nil
 }
@@ -396,10 +467,8 @@ func PushOp(interpreter *Interpreter) error {
 	code := interpreter.ContractCode
 	pc := &state.pc
 
-	var result *DataTypes.DataWord
 	var datatype DataTypes.Datatype
 	var argSize uint
-
 	switch opCode {
 	case byte(PUSH32):
 		argSize = jumpTable[PUSH32].codeArgsCount
@@ -417,10 +486,22 @@ func PushOp(interpreter *Interpreter) error {
 		argSize = jumpTable[PUSH256].codeArgsCount
 		datatype = DataTypes.Int256
 	}
+	result := DataTypes.NewData(datatype)
 	result.Data.SetDataWord(code[state.pc+1 : state.pc+argSize+1])
-	result.Datatype = datatype
-	*pc += uint(argSize) + 1
 
+	*pc += uint(argSize) + 1
+	stack.Push(result)
+	return nil
+}
+
+func PushStringOp(interpreter *Interpreter) error {
+	stack := interpreter.state.Stack
+	size := stack.Pop().Data.ToInt32()
+	offset := stack.Pop().Data.ToInt32()
+
+	s := interpreter.ContractCode[offset : offset+size]
+
+	result := DataTypes.NewString(s)
 	stack.Push(result)
 	return nil
 }
@@ -435,6 +516,13 @@ func JumpOp(interpreter *Interpreter) error {
 	state := interpreter.state
 	pc := &state.pc
 	*pc = uint(state.Stack.Pop().Data.ToInt32())
+	return nil
+}
+
+func AddToPCOp(interpreter *Interpreter) error {
+	state := interpreter.state
+	pc := &state.pc
+	*pc += uint(state.Stack.Pop().Data.ToInt32())
 	return nil
 }
 
@@ -459,14 +547,15 @@ func SubscribeOp(interpreter *Interpreter) error {
 	stack := state.Stack
 	returnIndex := stack.Pop().Data.ToInt32()
 	keyType := stack.Pop().Data
-	key := stack.Pop().Data
-	size := int(stack.Pop().Data.ToInt32())
-	offset := int(stack.Pop().Data.ToInt32())
-	url := string(interpreter.ContractCode[offset : offset+size])
-
+	keySize := stack.Pop().Data.ToInt32()
+	keyOffset := stack.Pop().Data.ToInt32()
+	urlSize := int(stack.Pop().Data.ToInt32())
+	urlOffset := int(stack.Pop().Data.ToInt32())
+	url := string(interpreter.ContractCode[urlOffset : urlOffset+urlSize])
+	key := string(interpreter.ContractCode[keyOffset : keyOffset+keySize])
 	sub := &Messages.SubscribeMsg{
 		VmId:          interpreter.Id,
-		OracleKey:     strconv.Itoa(int(key.ToInt32())),
+		OracleKey:     key,
 		KeyType:       int(keyType.ToInt32()),
 		Url:           url,
 		BroadcastChan: interpreter.ReceiveChan,
@@ -480,11 +569,10 @@ func SubscribeOp(interpreter *Interpreter) error {
 
 func WaitOp(interpreter *Interpreter) error {
 	receiveChan := interpreter.ReceiveChan
-
 	Memory := interpreter.state.Memory
+
 Outer:
 	for {
-
 		select {
 		case msg := <-receiveChan:
 			if msg.Error {
@@ -494,17 +582,37 @@ Outer:
 			val := msg.Value
 			dataType := msg.Type
 			interpreter.oracleTransactions[idx] = msg
-			Memory[idx] = &DataTypes.DataWord{
-				Data:     DataTypes.ByteArrToBigInt(val),
-				Datatype: DataTypes.Datatype(dataType),
-			}
-			for _, v := range interpreter.reservedIndex {
+			d := DataTypes.NewData(DataTypes.Datatype(dataType))
+			d.Data.SetDataWord(val)
+			log.Println("VM Received update on", msg.Key, "=", d.Data.ToInt32())
+			fmt.Println("VM Received update on", msg.Key, "=", d.Data.ToInt32())
+			Memory[idx] = d
+			for i, v := range interpreter.reservedIndex {
 				if Memory[v] == nil {
+					fmt.Println(i, "is nil")
 					continue Outer
 				}
 			}
-			return nil
+			if !interpreter.IsBlocked {
+				log.Println("Start Evaluation")
+				fmt.Println("Start Evaluation")
+				return nil
+			}
+		case status := <-interpreter.getStatusChan:
+			interpreter.IsBlocked = status
+			for _, v := range interpreter.reservedIndex {
+				if Memory[v] == nil {
+					fmt.Println("Start Evaluation")
+					continue Outer
+				}
+			}
+			if !interpreter.IsBlocked {
+				log.Println("Start Evaluation")
+				fmt.Println("Start Evaluation")
+				return nil
+			}
 		}
+
 	}
 }
 
@@ -514,36 +622,61 @@ func LoadOp(interpreter *Interpreter) error {
 	return nil
 }
 
+func StoreOp(interpreter *Interpreter) error {
+	memory, idx, word := interpreter.state.Memory, interpreter.state.Stack.Pop().Data.ToInt32(), interpreter.state.Stack.Pop()
+	memory[idx] = word
+	return nil
+}
+
 func ExecutePeriodicallyOp(interpreter *Interpreter) error {
 
 	stack := interpreter.state.Stack
 	executionInterval := stack.Pop()
 	freq := stack.Pop().Data.ToInt32()
-	if freq < uint32(ONCE) || freq > uint32(YEARLY) {
+	startTime := stack.Pop()
+	if freq < uint32(TimeListener.ONCE) || freq > uint32(TimeListener.EveryMinute) {
 		return errors.New("error in Frequency")
 	}
-	startTime := stack.Pop()
 	if executionInterval.Datatype == DataTypes.Boolean || executionInterval.Datatype == DataTypes.Time ||
 		executionInterval.Datatype == DataTypes.String {
-		return errors.New("cannot use " + strconv.Itoa(int(executionInterval.Datatype)) + " as executionInterval")
+		return errors.New("cannot use " + (strconv.Itoa(int(executionInterval.Datatype))) + " as ExecutionInterval")
 	}
-	arrToTime := func(arr []byte) time.Time {
-		var year = uint16(arr[1])<<8 + uint16(arr[0])
-		t := time.Date(int(year), time.Month(int(arr[2])), int(arr[3]), int(arr[4]), int(arr[5]), int(arr[6]), 0, time.UTC)
-		return t
+	msg := &TimeListener.SubscribeMsg{
+		Id:            interpreter.Id,
+		TimeArr:       startTime.Data.ToByteArray(),
+		Frequency:     TimeListener.Frequency(freq),
+		Interval:      time.Duration(executionInterval.Data.ToInt32()) * time.Minute,
+		GetStatusChan: interpreter.getStatusChan,
 	}
-
-	interpreter.periodicExecution = &PeriodicExecution{
-		startTime:         arrToTime(startTime.Data.ToByteArray()),
-		frequency:         Frequency(freq),
-		executionInterval: time.Duration(executionInterval.Data.ToInt64()),
-	}
-
+	interpreter.TimeListener.Subscribe(msg)
+	interpreter.IsBlocked = true
+	interpreter.IsTimeDependent = true
 	return nil
 }
 
 // Transfer TODO
 func Transfer(interpreter *Interpreter) error {
+	stack := interpreter.state.Stack
+	money := stack.Pop()
+	fmt.Println()
+	a := stack.Pop().Data.ToString()
+	b := stack.Pop().Data.ToString()
+	fmt.Println(a)
+	fmt.Println(b)
 
+	//interpreter.TransactionChan <- struct {
+	//	ADDRESS1 string
+	//	ADDRESS2 string
+	//	Money    uint64
+	//}{
+	//	ADDRESS1: add1,
+	//	ADDRESS2: add2,
+	//	Money:    money.Data.ToInt64(),
+	//}
+	log.Println("Transfer", money.Data.ToInt64(), "from", b, " to ", a)
+	fmt.Println("Transfer", money.Data.ToInt64(), "from", b, " to ", a)
+	if interpreter.IsTimeDependent {
+		interpreter.IsBlocked = true
+	}
 	return nil
 }

@@ -3,6 +3,7 @@ package DataTypes
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/bits"
 	"strconv"
 )
@@ -27,7 +28,7 @@ func (x ExtraBigInt) ToInt64() uint64 {
 }
 
 func ByteArrToBigInt(arr []byte) ExtraBigInt {
-	bigInt := ExtraBigInt{}
+	bigInt := NewExtraBigInt(int(math.Ceil(float64(len(arr) / 4.0))))
 	bigInt.SetDataWord(arr)
 	return bigInt
 }
@@ -57,7 +58,7 @@ func intToByte(integer uint32) []byte {
 
 func (x ExtraBigInt) ToByteArray() []byte {
 
-	result := make([]byte, 1)
+	result := make([]byte, 0)
 
 	for i := 0; i < len(x); i++ {
 		result = append(result, intToByte(x[i])...)
@@ -65,7 +66,7 @@ func (x ExtraBigInt) ToByteArray() []byte {
 	return result
 }
 
-func (x ExtraBigInt) toString() string {
+func (x ExtraBigInt) ToString() string {
 	return string(x.ToByteArray())
 }
 func (x ExtraBigInt) ToBinary() string {
@@ -108,11 +109,11 @@ func (x ExtraBigInt) SetUint32(a uint32, i uint) {
 
 func (x ExtraBigInt) Add(y ExtraBigInt) ExtraBigInt {
 	var carry uint32 = 0
-	result := NewExtraBigInt(len(x))
-	for i := 0; i < len(result); i++ {
+	result := NewExtraBigInt(len(x) + 1)
+	for i := 0; i < len(result)-1; i++ {
 		(result)[i], carry = bits.Add32(x[i], y[i], carry)
 	}
-
+	result[len(x)] = carry
 	return result
 }
 
@@ -250,8 +251,7 @@ func MyDiv(u, v []uint32) ([]uint32, []uint32, error) {
 	return q, r, nil
 }
 
-func (x ExtraBigInt) Div(y ExtraBigInt) []uint32 {
-	fmt.Println("y =", y)
+func (x ExtraBigInt) Div(y ExtraBigInt) ([]uint32, error) {
 
 	//b := 1 << 32
 	var ylen int
@@ -266,12 +266,11 @@ func (x ExtraBigInt) Div(y ExtraBigInt) []uint32 {
 	} else {
 		y = y[:ylen]
 	}
-	fmt.Println("y =", y)
 	q, _, err := MyDiv(x, y)
 	if err != nil {
-		return make([]uint32, 1)
+		return nil, err
 	}
-	return q
+	return q, nil
 }
 
 func (x ExtraBigInt) Mod(y ExtraBigInt) (result ExtraBigInt) {
@@ -292,8 +291,8 @@ func (x ExtraBigInt) LT(y ExtraBigInt) bool {
 }
 
 func (x ExtraBigInt) SLT(y ExtraBigInt) bool {
-	dataWordSign := x.sign()
-	xSign := y.sign()
+	dataWordSign := x.Sign()
+	xSign := y.Sign()
 
 	if xSign > dataWordSign {
 		return true
@@ -305,8 +304,8 @@ func (x ExtraBigInt) SLT(y ExtraBigInt) bool {
 }
 
 func (x ExtraBigInt) SGT(y ExtraBigInt) bool {
-	dataWordSign := x.sign()
-	xSign := y.sign()
+	dataWordSign := x.Sign()
+	xSign := y.Sign()
 
 	if xSign < dataWordSign {
 		return true
@@ -318,12 +317,12 @@ func (x ExtraBigInt) SGT(y ExtraBigInt) bool {
 }
 
 /*
-	Returns the sign of the dataWord
+	Returns the Sign of the dataWord
 	if dataWord > 0 return 1
 	if dataWord < 0 return -1
 	if dataWord == 0 return 0
 */
-func (x ExtraBigInt) sign() int {
+func (x ExtraBigInt) Sign() int {
 	if x.IsZero() {
 		return 0
 	}

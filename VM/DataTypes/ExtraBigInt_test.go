@@ -167,11 +167,15 @@ func TestExtraBigInt_Add(t *testing.T) {
 		{},
 	}
 
-	for i := 1; i < 200; i++ {
+	for i := 1; i < 70; i++ {
 		a, b, aBig, bBig := generateTests(i)
 		result := a.Add(b)
+		fmt.Println(aBig.Text(10), bBig.Text(10))
 		resultBigInt := new(big.Int)
 		resultBigInt.Add(aBig, bBig)
+		fmt.Println(resultBigInt.Text(10))
+		fmt.Println(result)
+		fmt.Println()
 		tStruct := struct {
 			name              string
 			x                 ExtraBigInt
@@ -199,6 +203,24 @@ func TestExtraBigInt_Add(t *testing.T) {
 				t.Errorf("Add() = %v, ExtraBigIntResult %v", tt.BigInt, tt.ExtraBigIntResult)
 			}
 		})
+	}
+}
+
+var a = generateDataWord(32)
+var b = generateDataWord(32)
+var aBig, _ = new(big.Int).SetString(a.ToBinary(), 2)
+var bBig, _ = new(big.Int).SetString(b.ToBinary(), 2)
+var res = new(big.Int)
+
+func BenchmarkExtraBigInt_Multiply(t *testing.B) {
+	for i := 0; i < t.N; i++ {
+		a.Div(b)
+	}
+}
+
+func BenchmarkBigInt_Multiply(t *testing.B) {
+	for i := 0; i < t.N; i++ {
+		res.Div(aBig, bBig)
 	}
 }
 
@@ -271,7 +293,7 @@ func TestExtraBigInt_Xor(t *testing.T) {
 		{},
 	}
 
-	for i := 1; i < 70; i++ {
+	for i := 1; i < 200; i++ {
 		a, b, aBig, bBig := generateTests(i)
 		result := a.Xor(b)
 		resultBigInt := new(big.Int)
@@ -322,7 +344,7 @@ func TestExtraBigInt_And(t *testing.T) {
 		{},
 	}
 
-	for i := 1; i < 70; i++ {
+	for i := 1; i < 200; i++ {
 		a, b, aBig, bBig := generateTests(i)
 		result := a.And(b)
 		resultBigInt := new(big.Int)
@@ -373,7 +395,7 @@ func TestExtraBigInt_Or(t *testing.T) {
 		{},
 	}
 
-	for i := 1; i < 70; i++ {
+	for i := 1; i < 200; i++ {
 		a, b, aBig, bBig := generateTests(i)
 		result := a.Or(b)
 		resultBigInt := new(big.Int)
@@ -432,7 +454,7 @@ func TestExtraBigInt_Div(t *testing.T) {
 		fmt.Println("Test", i)
 		fmt.Println("a, b :=", a, b)
 		fmt.Println("BigA, BigB", aBig.Text(10), bBig.Text(10))
-		result := a.Div(b)
+		result, _ := a.Div(b)
 		resultBigInt := new(big.Int)
 		resultBigInt.Div(aBig, bBig)
 		fmt.Println("a/b :=", result)

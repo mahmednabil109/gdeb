@@ -1,6 +1,7 @@
 package DataTypes
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -23,7 +24,7 @@ type DataWord struct {
 func (x DataWord) ToString() string {
 	d := x.Data
 	if x.Datatype >= 1 && x.Datatype <= 3 {
-		return x.Data.toString()
+		return x.Data.ToString()
 	} else if x.Datatype == Boolean {
 		if x.Data[0] == 1 {
 			return "True"
@@ -67,6 +68,7 @@ func NewString(arr []byte) *DataWord {
 	if len(arr)%4 == 0 {
 		mod = 0
 	}
+	fmt.Println("HHHHH", string(arr))
 	data := &DataWord{
 		Data:     NewExtraBigInt(len(arr)/4 + mod),
 		Datatype: String,

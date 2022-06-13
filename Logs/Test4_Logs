@@ -1,0 +1,15 @@
+2022/06/11 10:05:17 Started Execution!!!
+2022/06/11 10:05:17 Connected to ws://127.0.0.1:8383/sub
+2022/06/11 10:05:21 VM Received update on Stock = 10
+2022/06/11 10:05:21 Start Evaluation
+2022/06/11 10:05:21 Transfer 10 from a  to  b
+2022/06/11 10:05:25 VM Received update on Stock = 11
+2022/06/11 10:05:25 Start Evaluation
+2022/06/11 10:05:44 VM Received update on Stock = 12
+2022/06/11 10:05:44 Start Evaluation
+2022/06/11 10:05:54 VM Received update on Stock = 10
+2022/06/11 10:05:54 Start Evaluation
+2022/06/11 10:05:54 Transfer 10 from a  to  b
+2022/06/11 10:05:54 Out of gas error
+2022/06/11 10:05:54 Consumed gas: 149
+

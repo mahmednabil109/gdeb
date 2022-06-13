@@ -3,6 +3,7 @@ package OracleListener
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/mahmednabil109/gdeb/Messages"
 	"log"
 	"net/http"
 	"sync"
@@ -24,7 +25,7 @@ func TestNewOraclePool(t *testing.T) {
 		wg.Add(1)
 		log.Println("Entered ", f)
 		for i := 0; i < 5; i++ {
-			subMsg := &SubscribeMsg{
+			subMsg := &Messages.SubscribeMsg{
 				OracleKey:     f,
 				Url:           s,
 				Index:         i,
