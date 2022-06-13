@@ -1,0 +1,20 @@
+2022/06/11 09:28:30 Started Execution!!!
+2022/06/11 09:28:40 VM Received update on RicePrice = 11
+2022/06/11 09:29:00 Start Evaluation
+2022/06/11 09:29:00 VM is now Free :)
+2022/06/11 09:29:08 VM Received update on RicePrice = 12
+2022/06/11 09:29:08 Start Evaluation
+2022/06/11 09:29:10 VM is Blocked :(
+2022/06/11 09:29:19 VM Received update on RicePrice = 6
+2022/06/11 09:30:00 Start Evaluation
+2022/06/11 09:30:00 VM is now Free :)
+2022/06/11 09:30:01 Transfer 10 from a  to  b
+2022/06/11 09:30:07 VM Received update on RicePrice = 1
+2022/06/11 09:30:10 VM is Blocked :(
+2022/06/11 09:30:20 VM Received update on RicePrice = 12
+2022/06/11 09:31:00 Start Evaluation
+2022/06/11 09:31:00 VM is now Free :)
+2022/06/11 09:31:05 VM Received update on RicePrice = 5
+2022/06/11 09:31:05 Start Evaluation
+2022/06/11 09:31:05 Out of gas error
+2022/06/11 09:31:05 Consumed gas: 149
