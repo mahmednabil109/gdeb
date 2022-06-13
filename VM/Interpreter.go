@@ -3,10 +3,12 @@ package VM
 import (
 	"errors"
 	"fmt"
+	"log"
+
 	"github.com/mahmednabil109/gdeb/Listeners/OracleListener"
 	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
 	"github.com/mahmednabil109/gdeb/Messages"
-	"log"
+	"github.com/mahmednabil109/gdeb/data"
 )
 
 type Frequency byte
@@ -29,7 +31,8 @@ type Interpreter struct {
 	IsTimeDependent    bool
 }
 
-func NewInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool, gasLimit uint64, timeListener *TimeListener.TimeListener) *Interpreter {
+func NewInterpreter(id int, contractCode []byte, pool *OracleListener.OraclePool, gasLimit uint64, timeListener *TimeListener.TimeListener, ConsChan chan<- data.Transaction) *Interpreter {
+	// Write result on ConsChan
 	return &Interpreter{
 		Id:                 id,
 		state:              newState(),

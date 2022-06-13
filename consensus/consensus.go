@@ -113,9 +113,16 @@ func (c *Consensus) validBlock(b *data.Block) bool {
 		return false
 	}
 	for _, t := range b.Transactions {
-		if !c.validTrans(&t) {
+		if t.ContractCode != nil {
+			// TODO: verifiable VM
+			// skip validation of contract transaction for no
+			continue
+		} else if !c.validTrans(&t) {
+			return false
+		} else {
 			return false
 		}
+
 	}
 	return true
 }
@@ -180,7 +187,14 @@ func (c *Consensus) Init() error {
 					//validate transaction & append if valid (fields & money in blockchain)
 					log.Printf("consensus: recieved transaction %+v", t)
 					if c.validTrans(&t) {
-						c.TransPool.Add(&t)
+						if t.ContractCode == nil {
+							c.TransPool.Add(&t)
+						} else {
+							// Interpreter stuf
+
+							// create channel and Interpreter instance
+						}
+						//
 					} else {
 						log.Print("transaction is not valid")
 					}
@@ -205,4 +219,13 @@ func (c *Consensus) Init() error {
 		}
 	}()
 	return nil
+}
+
+func (c *Consensus) readTransaction(VMCons <-chan data.Transaction) {
+	// sign
+	// add to pool
+
+	for t := range VMCons {
+		c.ChanConsTransaction <- t
+	}
 }
