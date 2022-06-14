@@ -58,8 +58,20 @@ func New(c *communication.CommunNetwCons, stakeDist *blockchain.StakeDistributio
 func (c *Consensus) SendTransaction(t data.Transaction) {
 	// if c.validTrans(&t) {
 	log.Print("valid transaction")
+	if t.ContractCode != nil {
+		pubAddr, _, err := ed25519.GenerateKey(nil)
+		if err != nil {
+			panic("something happend")
+		}
+		t.ContractAddress = hex.EncodeToString(pubAddr)
+
+	}
 	t.Sign(c.PrivateKey)
 	c.ChanConsTransaction <- t
+
+	if t.ContractCode != nil {
+		log.Printf("contract deployed %s", t.ContractAddress)
+	}
 	// } else {
 	// log.Print("invalid transaction")
 	// }

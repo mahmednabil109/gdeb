@@ -2,7 +2,8 @@ package node
 
 import (
 	"context"
-	"log"
+	"crypto/ed25519"
+	"encoding/hex"
 
 	"github.com/mahmednabil109/gdeb/Listeners/OracleListener"
 	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
@@ -37,7 +38,7 @@ func New(config *config.Config) *Node {
 	}
 
 	privateKey := config.NodeKey()
-	log.Print(privateKey)
+	// log.Print(privateKey)
 
 	dist := make(map[string]float64)
 	data.LoadStakeDist("stakeDistribution.json", &dist)
@@ -71,4 +72,13 @@ func (n *Node) Init(ctx context.Context) {
 
 	// init the consensus
 	n.Consensus.Init()
+}
+
+func (n *Node) Deploy(contract []byte) {
+	n.Consensus.SendTransaction(data.Transaction{
+		From:         hex.EncodeToString(n.Consensus.PrivateKey.Public().(ed25519.PublicKey)),
+		GasPrice:     uint64(100),
+		GasLimit:     uint64(200),
+		ContractCode: contract,
+	})
 }

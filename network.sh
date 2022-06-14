@@ -19,5 +19,5 @@ for i in `seq 8`; do
      go run ./main.go -port $port -first 0 -pk $pk -bootstrap 127.0.0.1:8080 &
      sleep 1
 done
-sleep 2
-go run ./main.go -port 8091 -first 0 -send 1 -pk 9 -bootstrap 127.0.0.1:8080 &
+# sleep 2
+# go run ./main.go -port 8091 -first 0 -send 1 -pk 9 -bootstrap 127.0.0.1:8080 &

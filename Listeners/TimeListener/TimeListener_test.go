@@ -2,10 +2,11 @@ package TimeListener
 
 import (
 	"fmt"
-	"github.com/mahmednabil109/gdeb/Messages"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/mahmednabil109/gdeb/Messages"
 )
 
 func TestNewTimeListener(t *testing.T) {
@@ -33,10 +34,10 @@ func TestNewTimeListener(t *testing.T) {
 		trackWg++
 		receiveChan := make(chan *Messages.BroadcastMsg)
 		sub := &SubscribeMsg{
-			TimeArr:      timeSlice[i],
-			ResponseChan: receiveChan,
-			Idx:          i,
-			Id:           i,
+			TimeArr: timeSlice[i],
+			// ResponseChan: receiveChan,
+			// Idx:          i,
+			Id: i,
 		}
 		timeListener.Subscribe(sub)
 		go func() {
