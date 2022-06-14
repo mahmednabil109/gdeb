@@ -3,13 +3,14 @@ package VM
 import (
 	"errors"
 	"fmt"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/mahmednabil109/gdeb/Listeners/TimeListener"
 	"github.com/mahmednabil109/gdeb/Messages"
 	"github.com/mahmednabil109/gdeb/VM/DataTypes"
 	"github.com/mahmednabil109/gdeb/data"
-	"log"
-	"strconv"
-	"time"
 )
 
 type (
@@ -683,7 +684,7 @@ func Transfer(interpreter *Interpreter) error {
 		From:        a,
 		To:          b,
 		ConsumedGas: interpreter.state.consumedGas,
-		Timestamp:   time.Now().String(),
+		// Timestamp:   time.Now().String(),
 	}
 
 	interpreter.state.consumedGas = 0

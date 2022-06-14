@@ -67,6 +67,7 @@ func (interpreter *Interpreter) Run() error {
 
 		curInstruction := (interpreter.ContractCode)[*pc]
 		operationInfo := interpreter.jumpTable.getInstruction(curInstruction)
+		// fmt.Printf("%+v %+v \n", curInstruction, operationInfo)
 		fmt.Println("Current Instruction:", OpcodeIntToString[curInstruction])
 		fmt.Println("Consumed Gas", interpreter.state.consumedGas)
 		if *consumedGas+operationInfo.gasPrice > gasLimit {

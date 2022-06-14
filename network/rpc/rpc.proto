@@ -78,8 +78,9 @@ message Transaction {
   bytes ContractCode = 6;
   uint64 GasPrice = 7;
   uint64 GasLimit = 8;
-  string ContractAddress = 9;
-  string Signature = 10;
+  uint64 ConsumedGas = 9;
+  string ContractAddress = 10;
+  string Signature = 11;
 }
 
 message Block {

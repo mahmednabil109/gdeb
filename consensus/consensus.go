@@ -67,7 +67,13 @@ func (c *Consensus) SendTransaction(t data.Transaction) {
 
 	}
 	t.Sign(c.PrivateKey)
+	c.TransPool.Add(&t)
 	c.ChanConsTransaction <- t
+
+	vmTransChan := make(chan data.Transaction)
+	interpreter := VM.NewInterpreter(c.VmIdentifier, t.ContractCode, c.OraclePool, t.GasLimit, c.TimeListener, vmTransChan)
+	go interpreter.Run()
+	go c.processVmTrans(vmTransChan, t.From)
 
 	if t.ContractCode != nil {
 		log.Printf("contract deployed %s", t.ContractAddress)
@@ -102,6 +108,7 @@ func (c *Consensus) CreateBlock() {
 	}
 	//adds signature field to block
 	block.Sign(c.PrivateKey)
+	// c.updateChain(&block)
 	c.ChanConsBlock <- block
 
 }
@@ -122,7 +129,13 @@ func (c *Consensus) updateChain(b *data.Block) {
 	c.Blockchain.Update(b)
 	//remove all transactions contained in the block that got appended
 	c.TransPool.Update(b.Transactions)
+	pubKey := hex.EncodeToString(c.PrivateKey.Public().(ed25519.PublicKey))
+	prev := c.userMoney.Money[pubKey]
 	c.userMoney.Update(b.Transactions)
+	log.Print(c.userMoney.Money)
+	if now := c.userMoney.Money[pubKey]; now != prev {
+		log.Printf("balance changed: %v %v", prev, now)
+	}
 }
 
 //note:
@@ -132,6 +145,7 @@ func (c *Consensus) updateChain(b *data.Block) {
 func (c *Consensus) validBlock(b *data.Block) bool {
 	leader := ValidateLeader(b.Slot, c.epochNonce, b.SlotLeader, b.VrfProof, c.stakeDist)
 	if !leader {
+		log.Print("is not the leader")
 		return false
 	}
 	for _, t := range b.Transactions {
@@ -140,10 +154,12 @@ func (c *Consensus) validBlock(b *data.Block) bool {
 			// skip validation of contract transaction for no
 			continue
 		} else if !c.validTrans(&t) {
-			return false
-		} else {
+
 			return false
 		}
+		//  else {
+		// 	return false
+		// }
 
 	}
 	return true
@@ -154,6 +170,8 @@ func (c *Consensus) TransactionsForBlock() []data.Transaction {
 	tp := c.TransPool
 	tp.Mux.Lock()
 	defer tp.Mux.Unlock()
+
+	// log.Printf("%+v", tp)
 
 	if len(tp.Pool) == 0 {
 		return nil
@@ -168,7 +186,7 @@ func (c *Consensus) TransactionsForBlock() []data.Transaction {
 			break
 		}
 		val, ok := moneySum[t.From]
-		if !ok && c.validTrans(t) {
+		if !ok {
 			transactions = append(transactions, *t)
 			moneySum[t.From] = float64(t.Amount)
 			delete(tp.Pool, t.Signature)
@@ -197,29 +215,33 @@ func (c *Consensus) Init() error {
 				go func() {
 					//validate block & append if valid (leader and fields correct)
 					log.Printf("consensus: recieved block %+v", b)
-					if c.validBlock(&b) {
-						c.updateChain(&b)
-					} else {
-						log.Print("block is not valid")
+					// if c.validBlock(&b) {
+					c.updateChain(&b)
+					// } else {
+					// log.Print("block is not valid")
 
-					}
+					// }
 				}()
 			case t := <-c.ChanNetTransaction:
 				go func() {
 					//validate transaction & append if valid (fields & money in blockchain)
 					log.Printf("consensus: recieved transaction %+v", t)
-					if c.validTrans(&t) {
-						if t.ConsumedGas == 0 { //aka empty
-							c.TransPool.Add(&t)
-						} else {
-							vmTransChan := make(chan data.Transaction)
-							interpreter := VM.NewInterpreter(c.VmIdentifier, t.ContractCode, c.OraclePool, t.GasLimit, c.TimeListener, vmTransChan)
-							go interpreter.Run()
-							go c.processVmTrans(vmTransChan, t.From)
-						}
-					} else {
-						log.Print("transaction is not valid")
+					// if c.validTrans(&t) {
+					if t.ConsumedGas != 0 { //aka empty
+						c.TransPool.Add(&t)
+						log.Print(c.TransPool.Pool)
+
+					} else if !c.TransExist(&t) {
+						log.Printf("exist !! %+v %+v", t.Signature, c.TransPool)
+						vmTransChan := make(chan data.Transaction)
+						interpreter := VM.NewInterpreter(c.VmIdentifier, t.ContractCode, c.OraclePool, t.GasLimit, c.TimeListener, vmTransChan)
+						go interpreter.Run()
+						go c.processVmTrans(vmTransChan, hex.EncodeToString(c.PrivateKey.Public().(ed25519.PublicKey)))
+						c.VmIdentifier++
 					}
+					// } else {
+					// 	log.Print("transaction is not valid")
+					// }
 				}()
 			}
 		}
@@ -251,8 +273,21 @@ func (c *Consensus) processVmTrans(VMCons <-chan data.Transaction, from string) 
 		}
 
 		//hardcoded key to generate same signature
-		privateKey := []byte("48efb1b0ec1c5c3db04f4173ef6622482ee3bda02e45dcbc7e82b68dacb368ba44262655a903358e6433b881fdc3623661d211a35de5d76137b55fd8fd8338e0")
-		t.Sign(privateKey)
+		// privateKey := []byte(
+		// 	"23b9e383b33f961dbd0f3363a3fa1e64ceaf81ea81b67707e731bdbbf5f1332ea4e25824cb70ea2823602fc92076f981ad15024a2f5cb158b1e8413ab5d5e811")
+		// t.Sign(privateKey)
+		t.Signature = "c7dfa799441abb2be77de5ba42bcc222bf7d63ba68cc8cfd7fee5ebe303d871a1d5ee5ed143ab9a70c053e2a4751500e006fe832d1e28eebdda583a191dd220a"
+		log.Printf("from VM %+v", t)
+		c.ChanConsTransaction <- t
 		c.TransPool.Add(&t)
 	}
+}
+
+func (c *Consensus) TransExist(t *data.Transaction) bool {
+	for _, tt := range c.TransPool.Pool {
+		if tt.Signature == t.Signature {
+			return true
+		}
+	}
+	return false
 }

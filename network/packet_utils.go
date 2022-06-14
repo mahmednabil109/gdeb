@@ -100,6 +100,7 @@ func parse_transaction_packet(t *rpc.Transaction) *data.Transaction {
 		ContractCode:    t.ContractCode,
 		GasPrice:        t.GasPrice,
 		GasLimit:        t.GasLimit,
+		ConsumedGas:     t.ConsumedGas,
 		ContractAddress: t.ContractAddress,
 		Signature:       t.Signature,
 	}
@@ -114,6 +115,7 @@ func form_trans_packet(t *data.Transaction) *rpc.Transaction {
 		ContractCode:    t.ContractCode,
 		GasPrice:        t.GasPrice,
 		GasLimit:        t.GasLimit,
+		ConsumedGas:     t.ConsumedGas,
 		ContractAddress: t.ContractAddress,
 		Signature:       t.Signature,
 	}

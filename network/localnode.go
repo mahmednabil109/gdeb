@@ -194,7 +194,7 @@ func (ln *Node) BroadCast(thing interface{}) error {
 		BPacket.Trans = form_trans_packet(&b)
 	}
 
-	log.Printf("init broadcasting of %+v", BPacket)
+	// log.Printf("init broadcasting of %+v", BPacket)
 
 	// start the braodcast
 	if !ln.Successor.NodeAddr.Equal(ln.D.NodeAddr) {
